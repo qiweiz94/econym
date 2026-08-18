@@ -32,6 +32,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@deepseek-ai/schemastery": "workspace:^",
     "tree-sitter": "^0.25.1",
     "tree-sitter-typescript": "^0.23.2"
   },

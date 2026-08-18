@@ -25,11 +25,11 @@ async function fixture(content: string): Promise<string> {
   return path
 }
 
-async function setup(): Promise<Context> {
+async function setup(config?: object): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(tool)
+  await ctx.plugin(tool, config)
   return ctx
 }
 
@@ -103,6 +103,29 @@ describe('AstSymbolExtractor', () => {
     const symbols = new AstSymbolExtractor().extract('export default function () {}\n')
     expect(symbols).toEqual([])
   })
+
+  it('reports declarations in a BOM-prefixed file with correct spans', () => {
+    const symbols = new AstSymbolExtractor().extract('\uFEFFexport function foo() {}\n')
+    expect(symbols).toEqual([{ kind: 'function', name: 'foo', line: 1, endLine: 1, children: [] }])
+  })
+
+  it('counts CRLF line breaks as rows (members keep 1-based spans)', () => {
+    const symbols = new AstSymbolExtractor().extract(
+      'export function foo() {}\r\n\r\nexport class Bar {\r\n  method() {}\r\n}\r\n',
+    )
+    expect(symbols[1]).toEqual({
+      kind: 'class', name: 'Bar', line: 3, endLine: 5, children: [
+        { kind: 'function', name: 'method', line: 4, endLine: 4, children: [] },
+      ],
+    })
+  })
+
+  it('counts top-level declarations and members against the maxSymbols bound', () => {
+    const extractor = new AstSymbolExtractor()
+    const source = 'export class A {\n  m1() {}\n  m2() {}\n}\nexport function b() {}\n'
+    expect(extractor.extract(source, 4)).toHaveLength(2)
+    expect(() => extractor.extract(source, 3)).toThrow(/outline exceeds 3 symbols/)
+  })
 })
 
 describe('dsh-plugin-ast-context', () => {
@@ -161,6 +184,35 @@ describe('dsh-plugin-ast-context', () => {
     const result = await callOutline(ctx, path)
     expect(result.isError).toBe(true)
     expect(text(result)).toContain('syntax errors')
+  })
+
+  it('accepts a file at the exact maxBytes limit and rejects one byte past it', async () => {
+    const content = 'export function a() {}\n'
+    const path = await fixture(content)
+    const exact = await setup({ maxBytes: Buffer.byteLength(content) })
+    const ok = await callOutline(exact, path)
+    expect(ok.isError).toBe(false)
+
+    const past = await setup({ maxBytes: Buffer.byteLength(content) - 1 })
+    const err = await callOutline(past, path)
+    expect(err.isError).toBe(true)
+    expect(text(err)).toContain(`exceeding the ${Buffer.byteLength(content) - 1}-byte outline limit`)
+  })
+
+  it('counts multibyte file size in bytes, not characters', async () => {
+    const content = 'export function a() {}\n// 中文注释\n'
+    const path = await fixture(content)
+    const ctx = await setup({ maxBytes: Buffer.byteLength(content) })
+    const result = await callOutline(ctx, path)
+    expect(result.isError).toBe(false)
+  })
+
+  it('rejects an outline exceeding maxSymbols with a directing error', async () => {
+    const path = await fixture('export function a() {}\nexport function b() {}\nexport function c() {}\n')
+    const ctx = await setup({ maxSymbols: 2 })
+    const result = await callOutline(ctx, path)
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('outline exceeds 2 symbols; read the file directly or narrow the path')
   })
 
   it('presents the call as a generic read card with the file location', async () => {

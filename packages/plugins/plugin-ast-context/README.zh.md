@@ -8,7 +8,7 @@
 
 在 `ctx.tools` 上注册一个工具 `get_file_outline(path)`。该工具从磁盘读取文件，用 `tree-sitter` 的 TypeScript 语法解析，并返回规范化的 `FileOutlineResult`：`{ path, symbols }`，其中每个 `SymbolEntry` 携带 `kind`（`function` | `class` | `interface` | `type` | `enum`）、`name`、从 1 开始的 `line`/`endLine` 以及 `children`（类或接口体内声明的方法）。带 `export` 包装的声明按其真实名称报告；模型面向的渲染器为每个符号输出一行，成员缩进显示在所属符号之下。
 
-无法解析（语法错误）或无法读取的文件会以 `isError` 结果失败。
+无法解析（语法错误）或无法读取的文件会以 `isError` 结果失败。摘要有界：大于 `maxBytes`（默认 2 MiB）的文件或符号数超过 `maxSymbols`（默认 2,000）的摘要会被拒绝，返回指引性的错误结果而不是截断。
 
 ## 提取范围
 

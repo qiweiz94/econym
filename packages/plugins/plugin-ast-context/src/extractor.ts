@@ -45,15 +45,24 @@ export class AstSymbolExtractor {
   /**
    * Parse the given text and collect its declared symbols in source order.
    * @param text - the TypeScript source to outline.
+   * @param maxSymbols - report at most this many symbols (top-level plus
+   * members); exceeding the bound throws so the caller surfaces an error
+   * result instead of a partial outline.
    * @returns the top-level declarations, each carrying its member methods.
-   * @throws when the text does not parse as a TypeScript program.
+   * @throws when the text does not parse as a TypeScript program, or when the
+   * outline exceeds {@link maxSymbols}.
    */
-  extract(text: string): SymbolEntry[] {
+  extract(text: string, maxSymbols?: number): SymbolEntry[] {
     const root = this.parser.parse(text).rootNode
     if (root.hasError) {
       throw new Error('TypeScript parse failed: the file contains syntax errors')
     }
-    return this.collectDeclarations(root)
+    const symbols = this.collectDeclarations(root)
+    const total = symbols.reduce((count, symbol) => count + 1 + symbol.children.length, 0)
+    if (maxSymbols !== undefined && total > maxSymbols) {
+      throw new Error(`outline exceeds ${maxSymbols} symbols; read the file directly or narrow the path`)
+    }
+    return symbols
   }
 
   /** Collect declaration symbols from the direct named children of a node. */

@@ -8,7 +8,7 @@ The model-facing `get_file_outline` tool: parse a local TypeScript file with tre
 
 Registers one tool, `get_file_outline(path)`, on `ctx.tools`. The tool reads the file from disk, parses it with the `tree-sitter` TypeScript grammar, and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the methods declared in a class or interface body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
 
-A file that does not parse (syntax errors) or cannot be read fails the call as an `isError` result.
+A file that does not parse (syntax errors) or cannot be read fails the call as an `isError` result. Outlines are bounded: a file larger than `maxBytes` (default 2 MiB) or an outline with more symbols than `maxSymbols` (default 2,000) is refused with a directing error result rather than truncated.
 
 ## Extraction scope
 
@@ -24,7 +24,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`get_file_outline` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-ast-context): one required `path` string and the structured `symbols` array of `kind`/`name`/`line`/`endLine`/`children`.
+The model sees the generated [`get_file_outline` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-ast-context): one required `path` string and the structured `symbols` array of `kind`/`name`/`line`/`endLine`/`children`. Plugin config (`maxBytes` default 2 MiB, `maxSymbols` default 2,000) is validated at load and fails loud on invalid values; it changes no schema field, only whether a call resolves or returns a directing error result.
 
 #### Token effect
 

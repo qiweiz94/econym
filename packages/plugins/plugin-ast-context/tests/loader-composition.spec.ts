@@ -25,7 +25,7 @@ afterEach(async () => {
   root = undefined
 })
 
-async function boot(source: string): Promise<{ ctx: Context; path: string }> {
+async function boot(source: string, pluginEntry: string = "- name: '@deepseek-ai/dsh-plugin-ast-context'"): Promise<{ ctx: Context; path: string }> {
   root = await mkdtemp(join(tmpdir(), 'dsh-ast-context-loader-'))
   const path = join(root, 'sample.ts')
   await writeFile(path, source)
@@ -34,7 +34,7 @@ async function boot(source: string): Promise<{ ctx: Context; path: string }> {
     "- name: '@deepseek-ai/dsh-agent'",
     "- name: '@deepseek-ai/dsh-system-prompt'",
     "- name: '@deepseek-ai/dsh-tools'",
-    "- name: '@deepseek-ai/dsh-plugin-ast-context'",
+    pluginEntry,
     '',
   ].join('\n'))
 
@@ -81,5 +81,12 @@ describe('plugin-ast-context real Loader composition through cordis.yml', () => 
         { kind: 'function', name: 'qux', line: 2, endLine: 2, children: [] },
       ] }],
     })
+  }, 30_000)
+
+  it('fails loud at load when maxSymbols is not a positive integer', async () => {
+    await expect(boot(
+      'export function a() {}\n',
+      "- name: '@deepseek-ai/dsh-plugin-ast-context'\n  config:\n    maxSymbols: 0",
+    )).rejects.toThrow(/maxSymbols/)
   }, 30_000)
 })

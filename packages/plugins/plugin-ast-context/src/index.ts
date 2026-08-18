@@ -5,9 +5,10 @@
  * @module @deepseek-ai/dsh-plugin-ast-context
  */
 
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import z from '@deepseek-ai/schemastery'
 import { AstSymbolExtractor } from './extractor.ts'
 import type { FileOutlineResult, SymbolEntry } from './types.ts'
 
@@ -15,6 +16,20 @@ export const name = 'plugin-ast-context'
 export const inject = ['tools']
 
 const SYMBOL_KINDS = ['function', 'class', 'interface', 'type', 'enum'] as const
+
+/** Configuration for the outline tool. */
+export interface Config {
+  /** Refuse files larger than this many bytes (default 2 MiB). */
+  maxBytes?: number
+  /** Refuse outlines with more symbols than this (default 2,000). */
+  maxSymbols?: number
+}
+
+/** Runtime configuration schema for the outline tool plugin. */
+export const Config: z<Config> = z.object({
+  maxBytes: z.number().step(1).min(1).default(2_000_000),
+  maxSymbols: z.number().step(1).min(1).default(2_000),
+})
 
 /** One outline line: `kind name (line N)` or `(lines N-M)` for multi-line symbols. */
 function formatSymbol(symbol: SymbolEntry, indent: string): string {
@@ -40,7 +55,7 @@ function formatOutline(result: FileOutlineResult): string {
  * Register the `get_file_outline` tool on `ctx.tools`.
  * @param ctx - registrant context carrying the tool registry.
  */
-export function apply(ctx: Context): void {
+export function apply(ctx: Context, config: Config = {}): void {
   ctx.tools.register(defineTool({
     name: 'get_file_outline',
     description: 'Parse a local TypeScript file and list its top-level declarations — functions, '
@@ -96,8 +111,12 @@ export function apply(ctx: Context): void {
       render: (_args, value) => [{ type: 'text', text: formatOutline(value) }],
     },
     async execute(args, exec) {
+      const size = (await stat(args.path)).size
+      if (config.maxBytes !== undefined && size > config.maxBytes) {
+        throw new Error(`file is ${size} bytes, exceeding the ${config.maxBytes}-byte outline limit; read the file directly or narrow the path`)
+      }
       const text = await readFile(args.path, { encoding: 'utf8', signal: exec.signal })
-      const symbols = new AstSymbolExtractor().extract(text)
+      const symbols = new AstSymbolExtractor().extract(text, config.maxSymbols)
       return { path: args.path, symbols }
     },
     presentCall: args => ({
