@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -26,6 +26,18 @@ async function fixture(content: string): Promise<string> {
   return path
 }
 
+async function fixtureTree(): Promise<string> {
+  root = await mkdtemp(join(tmpdir(), 'dsh-ast-context-'))
+  await mkdir(join(root, 'lib'))
+  await mkdir(join(root, 'lib', 'deep'))
+  await writeFile(join(root, 'lib', 'a.ts'), 'export function a() {}\n')
+  await writeFile(join(root, 'lib', 'deep', 'b.tsx'), 'export class B { render() { return <div /> } }\n')
+  await writeFile(join(root, 'lib', 'broken.ts'), 'export function broken( {\n')
+  await writeFile(join(root, 'lib', 'notes.md'), 'not typescript\n')
+  await writeFile(join(root, 'lib', '.hidden.ts'), 'export function hidden() {}\n')
+  return root
+}
+
 async function setup(config?: object): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
@@ -40,6 +52,15 @@ function callOutline(ctx: Context, path: string) {
     signal: testSignal,
     callId: CallId(`outline-${++callCounter}`),
     name: 'get_file_outline',
+    arguments: { path },
+  })
+}
+
+function callDirectoryOutline(ctx: Context, path: string) {
+  return ctx.tools.execute({
+    signal: testSignal,
+    callId: CallId(`directory-outline-${++callCounter}`),
+    name: 'get_directory_outline',
     arguments: { path },
   })
 }
@@ -304,14 +325,107 @@ describe('dsh-plugin-ast-context', () => {
     })
   })
 
-  it('unregisters the tool when its contributing fiber is disposed (HMR-safety)', async () => {
+  it('registers a `get_directory_outline` tool whose schema takes a required path', async () => {
+    const ctx = await setup()
+    const schema = ctx.tools.schemas().find(s => s.name === 'get_directory_outline')
+    expect(schema).toBeDefined()
+    const compiled = schema!.parameters as unknown as {
+      properties?: Record<string, { type?: string; description?: string }>
+      required?: string[]
+    }
+    expect(Object.keys(compiled.properties ?? {})).toEqual(['path'])
+    expect(compiled.properties?.path?.type).toBe('string')
+    expect(compiled.required).toEqual(['path'])
+  })
+
+  it('outlines a directory tree end to end through the tool registry', async () => {
+    const dir = await fixtureTree()
+    const ctx = await setup()
+    const result = await callDirectoryOutline(ctx, dir)
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected get_directory_outline success')
+    expect(result.value).toEqual({
+      path: dir,
+      files: [
+        {
+          path: join(dir, 'lib', 'a.ts'),
+          symbols: [{ kind: 'function', name: 'a', line: 1, endLine: 1, children: [] }],
+        },
+        {
+          path: join(dir, 'lib', 'deep', 'b.tsx'),
+          symbols: [{ kind: 'class', name: 'B', line: 1, endLine: 1, children: [
+            { kind: 'function', name: 'render', line: 1, endLine: 1, children: [] },
+          ] }],
+        },
+      ],
+      skippedFiles: 1,
+    })
+    expect(text(result)).toBe(
+      `2 files outlined in ${dir}, 1 candidate file skipped\n`
+      + `1 symbol in ${join(dir, 'lib', 'a.ts')}\nfunction a (line 1)\n`
+      + `1 symbol in ${join(dir, 'lib', 'deep', 'b.tsx')}\nclass B (line 1)\n  function render (line 1)`,
+    )
+  })
+
+  it('returns isError for a missing directory and reports an unreadable root as skipped', async () => {
+    const ctx = await setup()
+    const missing = await callDirectoryOutline(ctx, join(tmpdir(), 'dsh-ast-context-missing-dir'))
+    expect(missing.isError).toBe(true)
+
+    const path = await fixture('export function single() {}\n')
+    const onFile = await callDirectoryOutline(ctx, path)
+    expect(onFile.isError).toBe(true)
+  })
+
+  it('respects the maxFiles cap in directory outlines and counts the rest as skipped', async () => {
+    const dir = await fixtureTree()
+    const ctx = await setup({ maxFiles: 1 })
+    const result = await callDirectoryOutline(ctx, dir)
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected get_directory_outline success')
+    const value = result.value as { files?: { path: string }[]; skippedFiles?: number }
+    expect(value.files).toEqual([
+      {
+        path: join(dir, 'lib', 'a.ts'),
+        symbols: [{ kind: 'function', name: 'a', line: 1, endLine: 1, children: [] }],
+      },
+    ])
+    expect(value.skippedFiles).toBe(2)
+  })
+
+  it('respects the maxBytes cap per file in directory outlines', async () => {
+    const dir = await fixtureTree()
+    const ctx = await setup({ maxBytes: 10 })
+    const result = await callDirectoryOutline(ctx, dir)
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected get_directory_outline success')
+    const value = result.value as { files?: unknown[]; skippedFiles?: number }
+    expect(value.files).toEqual([])
+    expect(value.skippedFiles).toBe(3)
+  })
+
+  it('presents the directory call as a generic read card with the directory location', async () => {
+    const ctx = await setup()
+    const def = ctx.tools.get('get_directory_outline')!
+    expect(def.presentCall?.({ path: '/tmp/src' })).toEqual({
+      card: 'generic',
+      title: 'Outline directory',
+      kind: 'read',
+      rawInput: '/tmp/src',
+      locations: [{ path: '/tmp/src' }],
+    })
+  })
+
+  it('unregisters the tools when their contributing fiber is disposed (HMR-safety)', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = await ctx.plugin(tool)
     expect(ctx.tools.schemas().some(s => s.name === 'get_file_outline')).toBe(true)
+    expect(ctx.tools.schemas().some(s => s.name === 'get_directory_outline')).toBe(true)
     await fiber.dispose()
     expect(ctx.tools.schemas().some(s => s.name === 'get_file_outline')).toBe(false)
+    expect(ctx.tools.schemas().some(s => s.name === 'get_directory_outline')).toBe(false)
   })
 
   it('has the namespace-plugin export shape (no stray default) so the Loader keeps name/inject/apply', () => {
