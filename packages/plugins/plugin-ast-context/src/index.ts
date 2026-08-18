@@ -59,8 +59,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.tools.register(defineTool({
     name: 'get_file_outline',
     description: 'Parse a local TypeScript file and list its top-level declarations — functions, '
-      + 'classes, interfaces, type aliases, and enums — with 1-based line spans, plus the methods '
-      + 'declared in each class or interface body. Use it to orient yourself before reading a large '
+      + 'classes, interfaces, type aliases, and enums — with 1-based line spans, plus the declarations '
+      + 'and methods declared in each symbol body. Use it to orient yourself before reading a large '
       + 'file. The path must exist and parse without syntax errors.',
     parameters: {
       path: {
@@ -90,7 +90,7 @@ export function apply(ctx: Context, config: Config = {}): void {
                 children: {
                   type: 'array',
                   required: true,
-                  description: 'Methods declared in the symbol body.',
+                  description: 'Declarations and methods declared in the symbol body.',
                   items: {
                     type: 'object',
                     additionalProperties: false,
@@ -99,7 +99,7 @@ export function apply(ctx: Context, config: Config = {}): void {
                       name: { type: 'string', required: true, description: 'The member name.' },
                       line: { type: 'integer', required: true, description: '1-based line where the member starts.' },
                       endLine: { type: 'integer', required: true, description: '1-based line where the member ends (inclusive).' },
-                      children: { type: 'array', required: true, description: 'Nested members; always empty in the current outline.' },
+                      children: { type: 'array', required: true, description: 'Nested declarations; one body level deep.' },
                     },
                   },
                 },

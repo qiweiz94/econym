@@ -6,13 +6,13 @@ The model-facing `get_file_outline` tool: parse a local TypeScript file with tre
 
 ## What it does
 
-Registers one tool, `get_file_outline(path)`, on `ctx.tools`. The tool reads the file from disk, parses it with the `tree-sitter` TypeScript grammar, and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the methods declared in a class or interface body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
+Registers one tool, `get_file_outline(path)`, on `ctx.tools`. The tool reads the file from disk, parses it with the `tree-sitter` TypeScript grammar, and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the declarations and methods declared directly in the symbol's body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
 
 A file that does not parse (syntax errors) or cannot be read fails the call as an `isError` result. Outlines are bounded: a file larger than `maxBytes` (default 2 MiB) or an outline with more symbols than `maxSymbols` (default 2,000) is refused with a directing error result rather than truncated.
 
 ## Extraction scope
 
-The outline is a pure function of file text: top-level `function`/`class`/`interface`/`type` alias/`enum` declarations in source order, plus method members (`method_definition`, `method_signature`). Class fields, property signatures, lexical declarations (`const f = () => {}`), and anything nested deeper than one member level are not reported.
+The outline is a pure function of file text: top-level `function`/`class`/`interface`/`type` alias/`enum` declarations in source order, plus the declarations and method members declared directly in each symbol's body (`class_body`/`interface_body`/`statement_block`), one body level deep per symbol. Class fields, property signatures, lexical declarations (`const f = () => {}`), namespaces, and declarations inside nested control-flow blocks are not reported.
 
 ## Export shape
 
@@ -37,6 +37,6 @@ Prefix-stable while the definition and visibility are unchanged. Plugin lifecycl
 ## Known Limitations and Deferred Work
 
 - **TypeScript only** — the extractor loads the TypeScript grammar; `.tsx` and other languages are not supported yet.
-- **Shallow outline** — one member level deep (methods of class/interface bodies); nested classes, namespaces, and deeper declarations are not reported.
+- **Shallow outline** — one body level deep per symbol; declarations nested in control-flow blocks and namespaces (and their contents) are not reported.
 - **Anonymous bindings omitted** — lexical declarations (`const`, `let`, `var`) and anonymous functions are not part of the outline, so function-valued constants do not appear.
 - **Single call per file** — no batch mode or directory walk; the model calls the tool once per file.

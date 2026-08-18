@@ -26,14 +26,21 @@ const MEMBER_TYPES: Readonly<Record<string, SymbolKind>> = {
   method_signature: 'function',
 }
 
-/** The body node kinds that declare the member scope of a class or interface. */
-const BODY_TYPES: ReadonlySet<string> = new Set(['class_body', 'interface_body'])
+/** Node types collected from a symbol's body, mapped to their outline kind. */
+const BODY_SYMBOL_TYPES: Readonly<Record<string, SymbolKind>> = {
+  ...DECLARATION_TYPES,
+  ...MEMBER_TYPES,
+}
+
+/** The body node kinds that declare the scope of a reported symbol. */
+const BODY_TYPES: ReadonlySet<string> = new Set(['class_body', 'interface_body', 'statement_block'])
 
 /**
- * Extract top-level declared symbols (and their members) from TypeScript text.
- * Declarations wrapped in `export_statement` are unwrapped; anonymous bindings
- * such as `const f = () => {}` are not reported. Member scopes list methods
- * only — fields and property signatures are not part of the outline.
+ * Extract top-level declared symbols (and their nested declarations) from
+ * TypeScript text. Declarations wrapped in `export_statement` are unwrapped;
+ * anonymous bindings such as `const f = () => {}` are not reported. Each
+ * reported symbol lists the declarations and method members declared directly
+ * in its body, one body level deep per symbol; namespaces are not reported.
  */
 export class AstSymbolExtractor {
   private readonly parser = new Parser()
@@ -45,10 +52,11 @@ export class AstSymbolExtractor {
   /**
    * Parse the given text and collect its declared symbols in source order.
    * @param text - the TypeScript source to outline.
-   * @param maxSymbols - report at most this many symbols (top-level plus
-   * members); exceeding the bound throws so the caller surfaces an error
-   * result instead of a partial outline.
-   * @returns the top-level declarations, each carrying its member methods.
+   * @param maxSymbols - report at most this many symbols at any nesting depth;
+   * exceeding the bound throws so the caller surfaces an error result instead
+   * of a partial outline.
+   * @returns the top-level declarations, each carrying the declarations and
+   * method members of its body.
    * @throws when the text does not parse as a TypeScript program, or when the
    * outline exceeds {@link maxSymbols}.
    */
@@ -58,11 +66,16 @@ export class AstSymbolExtractor {
       throw new Error('TypeScript parse failed: the file contains syntax errors')
     }
     const symbols = this.collectDeclarations(root)
-    const total = symbols.reduce((count, symbol) => count + 1 + symbol.children.length, 0)
+    const total = symbols.reduce((count, symbol) => count + 1 + this.countChildren(symbol.children), 0)
     if (maxSymbols !== undefined && total > maxSymbols) {
       throw new Error(`outline exceeds ${maxSymbols} symbols; read the file directly or narrow the path`)
     }
     return symbols
+  }
+
+  /** Count every symbol in a member list, including nested members. */
+  private countChildren(children: SymbolEntry[]): number {
+    return children.reduce((count, child) => count + 1 + this.countChildren(child.children), 0)
   }
 
   /** Collect declaration symbols from the direct named children of a node. */
@@ -74,23 +87,23 @@ export class AstSymbolExtractor {
       if (kind === undefined) continue
       symbols.push({
         ...this.span(inner, kind),
-        children: this.collectMembers(inner),
+        children: this.collectChildren(inner),
       })
     }
     return symbols
   }
 
-  /** Collect the method members declared in a class or interface body. */
-  private collectMembers(declaration: Parser.SyntaxNode): SymbolEntry[] {
+  /** Collect the declarations and method members declared directly in a symbol's body. */
+  private collectChildren(declaration: Parser.SyntaxNode): SymbolEntry[] {
     const body = declaration.namedChildren.find(child => BODY_TYPES.has(child.type))
     if (body === undefined) return []
-    const members: SymbolEntry[] = []
-    for (const member of body.namedChildren) {
-      const kind = MEMBER_TYPES[member.type]
+    const children: SymbolEntry[] = []
+    for (const child of body.namedChildren) {
+      const kind = BODY_SYMBOL_TYPES[child.type]
       if (kind === undefined) continue
-      members.push({ ...this.span(member, kind), children: [] })
+      children.push({ ...this.span(child, kind), children: this.collectChildren(child) })
     }
-    return members
+    return children
   }
 
   /** Build the identity and source span of one symbol, without its member list. */

@@ -86,9 +86,47 @@ describe('AstSymbolExtractor', () => {
     expect(symbols[5]).toEqual({ kind: 'function', name: 'local', line: 12, endLine: 12, children: [] })
   })
 
-  it('ignores class fields and nested bodies beyond the member list', () => {
+  it('ignores class fields (non-declaration members)', () => {
     const symbols = new AstSymbolExtractor().extract('export class Outer {\n  inner() {}\n  value = 1\n}\n')
     expect(symbols[0]?.children.map(c => c.name)).toEqual(['inner'])
+  })
+
+  it('reports declarations nested in symbol bodies, one body level deep per symbol', () => {
+    const symbols = new AstSymbolExtractor().extract(
+      'export class Outer {\n  inner() { class Deep { deep() {} } }\n}\n',
+    )
+    expect(symbols[0]?.children).toEqual([
+      {
+        kind: 'function', name: 'inner', line: 2, endLine: 2, children: [
+          {
+            kind: 'class', name: 'Deep', line: 2, endLine: 2, children: [
+              { kind: 'function', name: 'deep', line: 2, endLine: 2, children: [] },
+            ],
+          },
+        ],
+      },
+    ])
+  })
+
+  it('reports declarations declared directly in function bodies', () => {
+    const symbols = new AstSymbolExtractor().extract(
+      'export function f() {\n  class Local { m() {} }\n  interface I { x(): void }\n  type T = string\n  enum E { A }\n  const anon = () => 1\n}\n',
+    )
+    expect(symbols[0]?.children.map(c => c.name)).toEqual(['Local', 'I', 'T', 'E'])
+    expect(symbols[0]?.children[0]?.children.map(c => c.name)).toEqual(['m'])
+    expect(symbols[0]?.children[1]?.children.map(c => c.name)).toEqual(['x'])
+  })
+
+  it('keeps namespaces and their contents out of the outline', () => {
+    const symbols = new AstSymbolExtractor().extract('export namespace N {\n  class Inner { m() {} }\n}\n')
+    expect(symbols).toEqual([])
+  })
+
+  it('counts every nesting level against the maxSymbols bound', () => {
+    const extractor = new AstSymbolExtractor()
+    const source = 'export function f() {\n  class Local { m() {} }\n}\n'
+    expect(extractor.extract(source, 3)).toHaveLength(1)
+    expect(() => extractor.extract(source, 2)).toThrow(/outline exceeds 2 symbols/)
   })
 
   it('throws when the text does not parse as a TypeScript program', () => {
@@ -162,6 +200,16 @@ describe('dsh-plugin-ast-context', () => {
     const result = await callOutline(ctx, path)
     expect(result.isError).toBe(false)
     expect(text(result)).toBe(`1 symbol in ${path}\nclass Baz (lines 1-3)\n  function qux (line 2)`)
+  })
+
+  it('indents nested declarations under their owners in the renderer', async () => {
+    const path = await fixture('export class Outer {\n  inner() { class Deep {} }\n}\n')
+    const ctx = await setup()
+    const result = await callOutline(ctx, path)
+    expect(result.isError).toBe(false)
+    expect(text(result)).toBe(
+      `1 symbol in ${path}\nclass Outer (lines 1-3)\n  function inner (line 2)\n    class Deep (line 2)`,
+    )
   })
 
   it('pluralizes the renderer for files with several symbols', async () => {
