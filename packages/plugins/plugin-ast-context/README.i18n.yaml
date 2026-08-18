@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-ast-context/README.md
-README.md: 9e54894c5a0dcf9ffa0eec7b7b96d7267da3e2fb
-README.zh.md: a79f6d29367ddc22e11f7ffd5703f55cc91598ca
+README.md: a1c0908151466b5e9f4e8947a0be20d1ad3da7b4
+README.zh.md: d832f7263e9b2e04f656719f5d7240bc7b683ff0

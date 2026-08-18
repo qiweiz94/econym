@@ -28,3 +28,13 @@ export interface FileOutlineResult {
   /** Top-level declarations, in source order. */
   symbols: SymbolEntry[]
 }
+
+/** Canonical result of `get_directory_outline` for one directory tree. */
+export interface DirectoryOutlineResult {
+  /** The directory the outline was produced from. */
+  path: string
+  /** One file outline per outlined file, in path order. */
+  files: FileOutlineResult[]
+  /** Candidate files not outlined: hidden or non-TypeScript files are never counted. */
+  skippedFiles: number
+}
