@@ -2,11 +2,11 @@
 
 English | [中文](README.zh.md)
 
-The model-facing `get_file_outline` tool: parse a local TypeScript file with tree-sitter and report its declared symbols with 1-based line spans, so the model can orient before reading a large file.
+The model-facing `get_file_outline` tool: parse a local TypeScript (`.ts` or `.tsx`) file with tree-sitter and report its declared symbols with 1-based line spans, so the model can orient before reading a large file.
 
 ## What it does
 
-Registers one tool, `get_file_outline(path)`, on `ctx.tools`. The tool reads the file from disk, parses it with the `tree-sitter` TypeScript grammar, and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the declarations and methods declared directly in the symbol's body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
+Registers one tool, `get_file_outline(path)`, on `ctx.tools`. The tool reads the file from disk, parses it with the matching `tree-sitter` grammar (TypeScript for `.ts`, TSX for `.tsx`), and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the declarations and methods declared directly in the symbol's body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
 
 A file that does not parse (syntax errors) or cannot be read fails the call as an `isError` result. Outlines are bounded: a file larger than `maxBytes` (default 2 MiB) or an outline with more symbols than `maxSymbols` (default 2,000) is refused with a directing error result rather than truncated.
 
@@ -36,7 +36,7 @@ Prefix-stable while the definition and visibility are unchanged. Plugin lifecycl
 
 ## Known Limitations and Deferred Work
 
-- **TypeScript only** — the extractor loads the TypeScript grammar; `.tsx` and other languages are not supported yet.
+- **Two grammars** — `.ts` and `.tsx` use the `tree-sitter-typescript` grammars; other languages (`.js`, `.mts`, `.cts`) are not supported yet.
 - **Shallow outline** — one body level deep per symbol; declarations nested in control-flow blocks and namespaces (and their contents) are not reported.
 - **Anonymous bindings omitted** — lexical declarations (`const`, `let`, `var`) and anonymous functions are not part of the outline, so function-valued constants do not appear.
 - **Single call per file** — no batch mode or directory walk; the model calls the tool once per file.
