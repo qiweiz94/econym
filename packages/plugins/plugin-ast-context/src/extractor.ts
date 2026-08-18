@@ -10,6 +10,16 @@ import TypeScriptGrammars from 'tree-sitter-typescript'
 import type { SymbolEntry, SymbolKind } from './types.ts'
 
 const typescriptLanguage = TypeScriptGrammars.typescript as Parser.Language
+const tsxLanguage = TypeScriptGrammars.tsx as Parser.Language
+
+/**
+ * Pick the grammar for a source file path by extension.
+ * @param path - the file path to outline.
+ * @returns the TSX grammar for `.tsx` files and the TypeScript grammar otherwise.
+ */
+export function grammarFor(path: string): Parser.Language {
+  return path.endsWith('.tsx') ? tsxLanguage : typescriptLanguage
+}
 
 /** Declaration node types reported at file scope, mapped to their outline kind. */
 const DECLARATION_TYPES: Readonly<Record<string, SymbolKind>> = {
@@ -45,8 +55,12 @@ const BODY_TYPES: ReadonlySet<string> = new Set(['class_body', 'interface_body',
 export class AstSymbolExtractor {
   private readonly parser = new Parser()
 
-  constructor() {
-    this.parser.setLanguage(typescriptLanguage)
+  /**
+   * Create an extractor over the TypeScript or TSX grammar.
+   * @param grammar - the grammar to parse with; defaults to plain TypeScript.
+   */
+  constructor(grammar: Parser.Language = typescriptLanguage) {
+    this.parser.setLanguage(grammar)
   }
 
   /**

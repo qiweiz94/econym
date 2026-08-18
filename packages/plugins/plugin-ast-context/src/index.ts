@@ -9,7 +9,7 @@ import { readFile, stat } from 'node:fs/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
-import { AstSymbolExtractor } from './extractor.ts'
+import { AstSymbolExtractor, grammarFor } from './extractor.ts'
 import type { FileOutlineResult, SymbolEntry } from './types.ts'
 
 export const name = 'plugin-ast-context'
@@ -58,7 +58,7 @@ function formatOutline(result: FileOutlineResult): string {
 export function apply(ctx: Context, config: Config = {}): void {
   ctx.tools.register(defineTool({
     name: 'get_file_outline',
-    description: 'Parse a local TypeScript file and list its top-level declarations — functions, '
+    description: 'Parse a local TypeScript (.ts or .tsx) file and list its top-level declarations — functions, '
       + 'classes, interfaces, type aliases, and enums — with 1-based line spans, plus the declarations '
       + 'and methods declared in each symbol body. Use it to orient yourself before reading a large '
       + 'file. The path must exist and parse without syntax errors.',
@@ -66,7 +66,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       path: {
         type: 'string',
         required: true,
-        description: 'Repo-relative path to a TypeScript (.ts) file.',
+        description: 'Repo-relative path to a TypeScript (.ts or .tsx) file.',
       },
     },
     output: {
@@ -116,7 +116,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         throw new Error(`file is ${size} bytes, exceeding the ${config.maxBytes}-byte outline limit; read the file directly or narrow the path`)
       }
       const text = await readFile(args.path, { encoding: 'utf8', signal: exec.signal })
-      const symbols = new AstSymbolExtractor().extract(text, config.maxSymbols)
+      const symbols = new AstSymbolExtractor(grammarFor(args.path)).extract(text, config.maxSymbols)
       return { path: args.path, symbols }
     },
     presentCall: args => ({

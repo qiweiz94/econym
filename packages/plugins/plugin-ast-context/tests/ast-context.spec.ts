@@ -7,6 +7,7 @@ import Loader from '@deepseek-ai/cordis-plugin-loader'
 import { CallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import TypeScriptGrammars from 'tree-sitter-typescript'
 import { AstSymbolExtractor } from '../src/extractor.ts'
 import * as tool from '../src/index.ts'
 
@@ -129,6 +130,20 @@ describe('AstSymbolExtractor', () => {
     expect(() => extractor.extract(source, 2)).toThrow(/outline exceeds 2 symbols/)
   })
 
+  it('parses JSX with the TSX grammar and reports declarations with spans', () => {
+    const symbols = new AstSymbolExtractor(TypeScriptGrammars.tsx)
+      .extract('export function App() {\n  return <div className="x">hi</div>\n}\n')
+    expect(symbols).toEqual([
+      { kind: 'function', name: 'App', line: 1, endLine: 3, children: [] },
+    ])
+  })
+
+  it('keeps ignoring fields and lexical bindings in TSX files', () => {
+    const symbols = new AstSymbolExtractor(TypeScriptGrammars.tsx)
+      .extract('export class Panel {\n  title = <h1>t</h1>\n  render() {}\n}\n')
+    expect(symbols[0]?.children.map(c => c.name)).toEqual(['render'])
+  })
+
   it('throws when the text does not parse as a TypeScript program', () => {
     expect(() => new AstSymbolExtractor().extract('export function broken( {')).toThrow(/syntax errors/)
   })
@@ -192,6 +207,20 @@ describe('dsh-plugin-ast-context', () => {
       symbols: [{ kind: 'function', name: 'single', line: 1, endLine: 1, children: [] }],
     })
     expect(text(result)).toBe(`1 symbol in ${path}\nfunction single (line 1)`)
+  })
+
+  it('selects the TSX grammar for .tsx paths', async () => {
+    root = await mkdtemp(join(tmpdir(), 'dsh-ast-context-'))
+    const path = join(root, 'app.tsx')
+    await writeFile(path, 'export function App() {\n  return <div className="x">hi</div>\n}\n')
+    const ctx = await setup()
+    const result = await callOutline(ctx, path)
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected get_file_outline success')
+    expect(result.value).toEqual({
+      path,
+      symbols: [{ kind: 'function', name: 'App', line: 1, endLine: 3, children: [] }],
+    })
   })
 
   it('renders line ranges and indents members for multi-line symbols', async () => {
