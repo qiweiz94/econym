@@ -9,7 +9,7 @@
 在 `ctx.tools` 上注册两个工具：
 
 - `get_file_outline(path)` 从磁盘读取单个文件，用匹配的 `tree-sitter` 语法解析（`.ts` 用 TypeScript、`.tsx` 用 TSX），并返回规范化的 `FileOutlineResult`：`{ path, symbols }`，其中每个 `SymbolEntry` 携带 `kind`（`function` | `class` | `interface` | `type` | `enum`）、`name`、从 1 开始的 `line`/`endLine` 以及 `children`（符号体内直接声明的声明与方法）。带 `export` 包装的声明按其真实名称报告；模型面向的渲染器为每个符号输出一行，成员缩进显示在所属符号之下。
-- `get_directory_outline(path)` 遍历目录树，为找到的每个 `.ts`/`.tsx` 文件生成摘要（忽略隐藏条目与 `node_modules`，不跟随符号链接目录），并返回 `{ path, files, skippedFiles }`，其中 `files` 是按路径顺序排列的每文件 `FileOutlineResult`。
+- `get_directory_outline(path)` 遍历目录树，为找到的每个 `.ts`/`.tsx` 文件生成摘要（忽略隐藏条目与 `node_modules`，不跟随符号链接目录，并跳过 `.d.ts` 声明文件——它们只含类型、没有可摘要的运行时符号），并返回 `{ path, files, skippedFiles }`，其中 `files` 是按路径顺序排列的每文件 `FileOutlineResult`。
 
 无法解析（语法错误）或无法读取的文件会在文件调用中产生 `isError` 结果；在目录摘要中，这类文件计入 `skippedFiles` 而不是使整个调用失败。摘要有界：大于 `maxBytes`（默认 2 MiB）的文件、符号数超过 `maxSymbols`（默认 2,000）的摘要，或候选文件数超过 `maxFiles`（默认 200）的目录都会被拒绝——目录摘要把超出上限的数目报告在 `skippedFiles` 中，而不是静默截断。
 
@@ -44,3 +44,4 @@
 - **省略匿名绑定** —— 词法声明（`const`、`let`、`var`）和匿名函数不属于摘要范围，因此函数值常量不会出现。
 - **每次调用单个文件** —— 除目录遍历外无批量模式；模型每次调用 `get_file_outline` 处理一个文件。
 - **目录摘要遍历整棵树** —— 遍历受 `maxFiles` 约束，但仍需完整 `readdir` 一遍；即使摘要很小，极大的目录树也可能较慢。
+- **跳过声明文件** —— `.d.ts` 文件有意不参与摘要（它们声明类型而非运行时符号）；遍历同时忽略隐藏条目、`node_modules`，且不跟随符号链接目录。

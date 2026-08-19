@@ -9,7 +9,7 @@ The model-facing `get_file_outline` and `get_directory_outline` tools: parse loc
 Registers two tools on `ctx.tools`:
 
 - `get_file_outline(path)` reads one file from disk, parses it with the matching `tree-sitter` grammar (TypeScript for `.ts`, TSX for `.tsx`), and returns a canonical `FileOutlineResult`: `{ path, symbols }` where each `SymbolEntry` carries `kind` (`function` | `class` | `interface` | `type` | `enum`), `name`, 1-based `line`/`endLine`, and `children` (the declarations and methods declared directly in the symbol's body). Declarations wrapped in `export` statements are reported under their real name; the model-facing renderer prints one line per symbol with members indented under their owner.
-- `get_directory_outline(path)` walks the directory tree, outlines each `.ts`/`.tsx` file it finds (hidden entries and `node_modules` are ignored, symlinked directories are not followed), and returns `{ path, files, skippedFiles }` where `files` is one `FileOutlineResult` per outlined file in path order.
+- `get_directory_outline(path)` walks the directory tree, outlines each `.ts`/`.tsx` file it finds (hidden entries and `node_modules` are ignored, symlinked directories are not followed, and `.d.ts` declaration files are skipped because they carry only types, not outlinable runtime symbols), and returns `{ path, files, skippedFiles }` where `files` is one `FileOutlineResult` per outlined file in path order.
 
 A file that does not parse (syntax errors) or cannot be read fails the file call as an `isError` result; in a directory outline such a file is counted in `skippedFiles` instead of failing the whole call. Outlines are bounded: a file larger than `maxBytes` (default 2 MiB), an outline with more symbols than `maxSymbols` (default 2,000), or a directory with more candidate files than `maxFiles` (default 200) is refused — the directory outline reports the cap overflow in `skippedFiles` rather than truncating silently.
 
@@ -44,3 +44,4 @@ Prefix-stable while the definition and visibility are unchanged. Plugin lifecycl
 - **Anonymous bindings omitted** — lexical declarations (`const`, `let`, `var`) and anonymous functions are not part of the outline, so function-valued constants do not appear.
 - **Single call per file** — no batch mode beyond the directory walk; the model calls `get_file_outline` once per file.
 - **Directory outline walks the tree** — the walk is bounded by `maxFiles` but costs a full `readdir` pass; huge trees may take a while even when the outline is small.
+- **Declaration files skipped** — `.d.ts` files are intentionally not outlined (they declare types, not runtime symbols); the walk also ignores hidden entries, `node_modules`, and does not follow symlinked directories.
