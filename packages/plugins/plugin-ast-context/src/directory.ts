@@ -57,7 +57,7 @@ export async function collectTypeScriptFiles(root: string, maxFiles: number): Pr
  * Read one collected file and outline it with the shared extractor, enforcing
  * the byte cap and the symbol cap.
  * @param path - the file to outline.
- * @param extract - extraction callback producing symbols from file text.
+ * @param extract - extraction callback producing symbols from file path and text.
  * @param maxBytes - the byte cap, or undefined for no cap.
  * @param signal - abort signal forwarded to the file read.
  * @returns the file outline, or undefined when the file exceeds the byte cap.
@@ -65,12 +65,12 @@ export async function collectTypeScriptFiles(root: string, maxFiles: number): Pr
  */
 export async function outlineCollectedFile(
   path: string,
-  extract: (text: string) => SymbolEntry[],
+  extract: (path: string, text: string) => SymbolEntry[],
   maxBytes: number | undefined,
   signal: AbortSignal,
 ): Promise<FileOutlineResult | undefined> {
   const size = (await stat(path)).size
   if (maxBytes !== undefined && size > maxBytes) return undefined
   const text = await readFile(path, { encoding: 'utf8', signal })
-  return { path, symbols: extract(text) }
+  return { path, symbols: extract(path, text) }
 }
