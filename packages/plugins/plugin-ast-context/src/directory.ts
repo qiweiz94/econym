@@ -24,25 +24,40 @@ export interface CollectedFiles {
  * counted in `overLimit`, so the model knows the outline is partial.
  * @param root - the directory to walk, relative to the process cwd.
  * @param maxFiles - the number of files the outline may cover.
+ * @param signal - abort signal checked between directory reads.
  * @returns the collected files and the count cut off by the cap.
  */
-export async function collectTypeScriptFiles(root: string, maxFiles: number): Promise<CollectedFiles> {
+export async function collectTypeScriptFiles(
+  root: string,
+  maxFiles: number,
+  signal?: AbortSignal,
+): Promise<CollectedFiles> {
   const files: string[] = []
   const stack: string[] = [root]
   while (stack.length > 0) {
+    signal?.throwIfAborted()
     const directory = stack.pop()
     if (directory === undefined) break
     const entries = await readdir(directory, { withFileTypes: true })
+    signal?.throwIfAborted()
     const dirs: string[] = []
     for (const entry of entries) {
       if (entry.name.startsWith('.')) continue
       const path = join(directory, entry.name)
       if (entry.isDirectory()) {
+        // Symlinked directories are not followed: entry.isDirectory() is false
+        // for a symlink (lstat-based), so a symlinked dir is treated as a
+        // non-directory below and skipped — a symlink loop would otherwise
+        // recurse forever.
         if (entry.name !== 'node_modules') dirs.push(path)
         continue
       }
       if (!entry.isFile()) continue
       if (!path.endsWith('.ts') && !path.endsWith('.tsx')) continue
+      // Declaration files carry only type information, not runtime symbols
+      // worth outlining; skip them explicitly rather than via the hidden-dotfile
+      // rule (a .d.ts is not "hidden").
+      if (path.endsWith('.d.ts')) continue
       files.push(path)
     }
     stack.push(...dirs.sort().reverse())
