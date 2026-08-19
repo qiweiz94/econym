@@ -24,25 +24,40 @@ export interface CollectedFiles {
  * counted in `overLimit`, so the model knows the outline is partial.
  * @param root - the directory to walk, relative to the process cwd.
  * @param maxFiles - the number of files the outline may cover.
+ * @param signal - abort signal checked between directory reads.
  * @returns the collected files and the count cut off by the cap.
  */
-export async function collectTypeScriptFiles(root: string, maxFiles: number): Promise<CollectedFiles> {
+export async function collectTypeScriptFiles(
+  root: string,
+  maxFiles: number,
+  signal?: AbortSignal,
+): Promise<CollectedFiles> {
   const files: string[] = []
   const stack: string[] = [root]
   while (stack.length > 0) {
+    signal?.throwIfAborted()
     const directory = stack.pop()
     if (directory === undefined) break
     const entries = await readdir(directory, { withFileTypes: true })
+    signal?.throwIfAborted()
     const dirs: string[] = []
     for (const entry of entries) {
       if (entry.name.startsWith('.')) continue
       const path = join(directory, entry.name)
       if (entry.isDirectory()) {
+        // Symlinked directories are not followed: entry.isDirectory() is false
+        // for a symlink (lstat-based), so a symlinked dir is treated as a
+        // non-directory below and skipped — a symlink loop would otherwise
+        // recurse forever.
         if (entry.name !== 'node_modules') dirs.push(path)
         continue
       }
       if (!entry.isFile()) continue
       if (!path.endsWith('.ts') && !path.endsWith('.tsx')) continue
+      // Declaration files carry only type information, not runtime symbols
+      // worth outlining; skip them explicitly rather than via the hidden-dotfile
+      // rule (a .d.ts is not "hidden").
+      if (path.endsWith('.d.ts')) continue
       files.push(path)
     }
     stack.push(...dirs.sort().reverse())
@@ -57,7 +72,7 @@ export async function collectTypeScriptFiles(root: string, maxFiles: number): Pr
  * Read one collected file and outline it with the shared extractor, enforcing
  * the byte cap and the symbol cap.
  * @param path - the file to outline.
- * @param extract - extraction callback producing symbols from file text.
+ * @param extract - extraction callback producing symbols from the file path and text.
  * @param maxBytes - the byte cap, or undefined for no cap.
  * @param signal - abort signal forwarded to the file read.
  * @returns the file outline, or undefined when the file exceeds the byte cap.
@@ -65,12 +80,12 @@ export async function collectTypeScriptFiles(root: string, maxFiles: number): Pr
  */
 export async function outlineCollectedFile(
   path: string,
-  extract: (text: string) => SymbolEntry[],
+  extract: (path: string, text: string) => SymbolEntry[],
   maxBytes: number | undefined,
   signal: AbortSignal,
 ): Promise<FileOutlineResult | undefined> {
   const size = (await stat(path)).size
   if (maxBytes !== undefined && size > maxBytes) return undefined
   const text = await readFile(path, { encoding: 'utf8', signal })
-  return { path, symbols: extract(text) }
+  return { path, symbols: extract(path, text) }
 }

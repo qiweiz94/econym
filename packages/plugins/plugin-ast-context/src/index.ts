@@ -130,6 +130,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         },
       },
       render: (_args, value) => [{ type: 'text', text: formatOutline(value) }],
+      presentationMeta: (_args, value) => ({ outline: value }),
     },
     async execute(args, exec) {
       const size = (await stat(args.path)).size
@@ -153,8 +154,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     name: 'get_directory_outline',
     description: 'Parse every TypeScript (.ts or .tsx) file under a directory and list each file\'s top-level '
       + 'declarations — functions, classes, interfaces, type aliases, and enums — with 1-based line spans, '
-      + 'plus the declarations and methods declared in each symbol body. Hidden entries and node_modules are '
-      + 'ignored. Use it to orient yourself before reading a large directory tree. The path must exist and '
+      + 'plus the declarations and methods declared in each symbol body. Hidden entries, node_modules, and '
+      + '.d.ts declaration files are ignored. Use it to orient yourself before reading a large directory tree. The path must exist and '
       + 'be a directory.',
     parameters: {
       path: {
@@ -195,6 +196,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         },
       },
       render: (_args, value) => [{ type: 'text', text: formatDirectoryOutline(value) }],
+      presentationMeta: (_args, value) => ({ outline: value }),
     },
     async execute(args, exec) {
       const { files, overLimit } = await collectTypeScriptFiles(args.path, config.maxFiles ?? 200, exec.signal)

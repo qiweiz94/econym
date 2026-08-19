@@ -25,6 +25,7 @@ async function tree(): Promise<string> {
   await writeFile(join(root, '.hidden', 'other.txt'), 'text')
   await writeFile(join(root, 'node_modules', 'six.ts'), 'export function six() {}\n')
   await writeFile(join(root, 'b', '.hidden-inner', 'seven.ts'), 'export function seven() {}\n')
+  await writeFile(join(root, 'a', 'types.d.ts'), 'export interface Eight { n: number }\n')
   await symlink(join(root, 'a'), join(root, 'b', 'loop'))
   return root
 }
@@ -60,6 +61,20 @@ describe('collectTypeScriptFiles', () => {
       join(rootDir, 'a', 'two.tsx'),
     ])
     expect(collected.overLimit).toBe(2)
+  })
+
+  it('skips declaration files (.d.ts) and treats them as non-outlinable', async () => {
+    const rootDir = await tree()
+    const collected = await collectTypeScriptFiles(rootDir, 200)
+    // a/types.d.ts is present in the tree but must not be collected.
+    expect(collected.files.some(file => file.endsWith('.d.ts'))).toBe(false)
+    expect(collected.files).toEqual([
+      join(rootDir, 'a', 'one.ts'),
+      join(rootDir, 'a', 'two.tsx'),
+      join(rootDir, 'b', 'c', 'four.ts'),
+      join(rootDir, 'b', 'three.ts'),
+    ])
+    expect(collected.overLimit).toBe(0)
   })
 
   it('collects nothing from an empty directory', async () => {
