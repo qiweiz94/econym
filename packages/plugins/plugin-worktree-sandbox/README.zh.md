@@ -8,15 +8,15 @@
 
 在 `ctx.tools` 上注册一个工具：
 
-- `sandbox_exec(id?, command)` 在 `<worktreeRoot>/subagent-<id>` 创建（或复用）一个 detached git worktree，在其中运行 `sh -c <command>`，并返回结构化结果：命令的退出状态与试运行相对基准提交的 `git diff`。默认在调用后移除该 worktree，因此试运行的改动可被丢弃，直到调用者决定把它应用到真实工作树。
+- `sandbox_exec(id?, command)` 在 `<worktreeRoot>/subagent-<id>` 创建（或复用）一个 detached git worktree，在其中运行 `sh -c <command>`，并返回结构化结果：命令的退出状态与试运行相对该 worktree 自身 HEAD 的 `git diff`。默认在调用后移除该 worktree（成功与失败路径皆然），因此试运行的改动可被丢弃，直到调用者决定把它应用到真实工作树。
 
-结果包含 `exitCode`/`signal`、有界的 `stdout`/`stderr`、有界的 `diff` 与 `diffStat`，以及来自 `git status --porcelain` 的 `changedFiles` 列表。`cleanup: false` 会保留 worktree，使后续使用相同 `id` 的调用继续同一试运行（diff 会累积）。
+结果包含 `exitCode`/`signal`、有界的 `stdout`/`stderr`、有界的 `diff` 与 `diffStat`，以及来自 `git status --porcelain` 的 `changedFiles` 列表。diff 锚定到试运行 worktree 的 HEAD，因此即使两次调用之间主分支发生移动，复用试运行的 diff 依然正确。`cleanup: false` 会保留 worktree，使后续使用相同 `id` 的调用继续同一试运行（diff 会累积）；清理会在每条退出路径上执行，清理失败通过 `cleanupError` 报告，而不会掩盖命令的结果。
 
 ## 隔离模型
 
 - worktree 通过 `git worktree add --detach <path> <baseCommit>` 从 `baseRef`（默认 `HEAD`）创建，与仓库共享对象库，但拥有独立的工作树与索引。
-- 命令以 worktree 为 `cwd` 运行；主工作树与当前分支永不被触碰。
-- `cleanup`（默认 `true`）在捕获 diff 后以 `git worktree remove --force` 移除 worktree，丢弃试运行的未提交改动。
+- 命令以 worktree 为 `cwd`、通过 `sh -c` 运行（PATH 上必须有 POSIX shell）；主工作树与当前分支永不被触碰。
+- `cleanup`（默认 `true`）在捕获 diff 后以 `git worktree remove --force` 移除 worktree——在成功、命令失败或调用被中止等每条退出路径上都执行——丢弃试运行的未提交改动。
 - worktree 位于 `<cwd>/.dsh/worktrees/`（可用 `worktreeRoot` 配置），把试运行状态保留在仓库内而非系统临时目录。
 
 ## 输出保留包络
@@ -48,8 +48,9 @@
 
 ## 已知限制与待办
 
-- **依赖 git**——工具会调用 `git`（可用 `gitBinary` 配置）与 `sh`；`cwd` 不是 git 仓库时会在 `git rev-parse` 处大声失败。
+- **依赖 git 与 POSIX shell**——工具会调用 `git`（可用 `gitBinary` 配置），并以 `sh -c` 运行命令；`cwd` 不是 git 仓库时会在 `git rev-parse` 处大声失败；Windows 需要 POSIX shell（例如 Git Bash 或 WSL）。
 - **默认一次性**——`cleanup: true` 每次调用后移除 worktree；持久试运行需要 `cleanup: false` 并保持 `id` 稳定。
-- **仅前台**——没有后台/任务模式；长试运行会占用工具调用直到 `timeoutMs`（默认 30 秒）到期。
+- **相同 `id` 的复用是顺序的**——并发使用相同 `id` 的调用会解析为复用的试运行（后到者把先到者的 worktree 当作自己的），因此并发实验应使用不同的 `id`。
+- **仅前台**——没有后台/任务模式；长试运行会占用工具调用直到 `timeoutMs`（默认 30 秒）到期。超时的试运行仍会返回其部分 diff。
 - **包络边界情形**——大于两倍 `maxOutputBytes` 的 diff 会在 head 包络看到之前被子进程收集做 tail 截断，因此超大的 diff 可能头部与尾部都被丢弃。
 - **仅本地文件系统**——worktree 是本地 git worktree；没有远程或共享克隆模式。

@@ -122,6 +122,20 @@ export async function resolveBaseCommit(ctx: Context, repoRoot: string, git: str
   return resolved.stdout.text.trim()
 }
 
+/**
+ * Resolve a trial worktree's own HEAD commit. For a fresh worktree this is the
+ * base commit it was detached from; for a reused trial it is the trial's
+ * current head, so the returned diff stays anchored to the trial's base even
+ * when the main branch moves between calls.
+ */
+export async function resolveWorktreeHead(ctx: Context, worktreePath: string, git: string, signal?: AbortSignal): Promise<string> {
+  const resolved = await runCommand(ctx, worktreePath, [git, 'rev-parse', 'HEAD'], 4_096, signal)
+  if (resolved.exitCode !== 0) {
+    throw new Error(`git rev-parse HEAD failed in trial worktree: ${resolved.stderr.text || resolved.stdout.text}`)
+  }
+  return resolved.stdout.text.trim()
+}
+
 /** Add a detached trial worktree at `path` from `commit`. */
 export async function addWorktree(ctx: Context, repoRoot: string, git: string, path: string, commit: string): Promise<void> {
   const added = await runCommand(ctx, repoRoot, [git, 'worktree', 'add', '--detach', path, commit], 8_192)

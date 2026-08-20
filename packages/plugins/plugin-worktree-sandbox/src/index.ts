@@ -22,6 +22,7 @@ import {
   parseChangedFiles,
   removeWorktree,
   resolveBaseCommit,
+  resolveWorktreeHead,
   runCommand,
   worktreeExists,
 } from './worktree.ts'
@@ -152,7 +153,8 @@ export function apply(ctx: Context, config: Config): void {
       },
       render: (_args, value) => [{ type: 'text', text: renderSandboxResult(value) }],
     },
-    // Each trial owns an isolated worktree and a disjoint process tree; sibling
+    // Each trial owns an isolated worktree and a disjoint process tree. A
+    // same-`id` race on worktree creation resolves to a reused trial, so sibling
     // sandbox calls cannot corrupt one another's state.
     isConcurrencySafe: () => true,
     async execute(args, exec) {
@@ -170,34 +172,38 @@ export function apply(ctx: Context, config: Config): void {
       await mkdir(worktreeRoot, { recursive: true })
       let created = false
       if (!await worktreeExists(ctx, repoRoot, git, worktreePath)) {
-        await addWorktree(ctx, repoRoot, git, worktreePath, commit)
-        created = true
+        try {
+          await addWorktree(ctx, repoRoot, git, worktreePath, commit)
+          created = true
+        } catch (error: unknown) {
+          // A concurrent same-`id` call may have added the worktree first;
+          // treat that as a reused trial rather than failing the call.
+          if (!await worktreeExists(ctx, repoRoot, git, worktreePath)) throw error
+        }
       }
 
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), config.timeoutMs ?? 30_000)
-      // Cancel the trial when the caller aborts the tool call OR the timeout
-      // fires; the subprocess seam escalates to tree-scoped termination.
-      const callSignal = AbortSignal.any([exec.signal, controller.signal])
+      // The timeout bounds the COMMAND; caller cancellation (exec.signal) also
+      // cancels the follow-up capture so a timed-out trial still reports its
+      // partial diff. The follow-up git steps never inherit the timeout signal.
+      const commandSignal = AbortSignal.any([exec.signal, controller.signal])
+
+      let result: SandboxExecResult | undefined
+      let primaryError: unknown
       try {
-        const run = await runCommand(ctx, worktreePath, ['sh', '-c', args.command], envelope, callSignal)
+        const run = await runCommand(ctx, worktreePath, ['sh', '-c', args.command], envelope, commandSignal)
         // Mark untracked files intent-to-add so `git diff` includes them; the
         // trial's new files are the point of the diff.
-        await runCommand(ctx, worktreePath, [git, 'add', '-N', '.'], envelope, callSignal)
-        const diff = await collectRetained(ctx, worktreePath, [git, 'diff', commit, '--'], envelope, callSignal)
-        const diffStat = await collectRetained(ctx, worktreePath, [git, 'diff', '--stat', commit, '--'], envelope, callSignal)
-        const status = await runCommand(ctx, worktreePath, [git, 'status', '--porcelain'], envelope, callSignal)
+        await runCommand(ctx, worktreePath, [git, 'add', '-N', '.'], envelope, exec.signal)
+        // Diff against the trial worktree's own HEAD so a reused trial's diff
+        // stays anchored to its base even when the main branch moves.
+        const trialBase = await resolveWorktreeHead(ctx, worktreePath, git, exec.signal)
+        const diff = await collectRetained(ctx, worktreePath, [git, 'diff', trialBase, '--'], envelope, exec.signal)
+        const diffStat = await collectRetained(ctx, worktreePath, [git, 'diff', '--stat', trialBase, '--'], envelope, exec.signal)
+        const status = await runCommand(ctx, worktreePath, [git, 'status', '--porcelain'], envelope, exec.signal)
 
-        let cleanupError: string | undefined
-        if (config.cleanup !== false) {
-          try {
-            await removeWorktree(ctx, repoRoot, git, worktreePath)
-          } catch (error: unknown) {
-            cleanupError = String(error)
-          }
-        }
-
-        return {
+        result = {
           kind: 'sandbox',
           worktree: worktreePath,
           baseRef,
@@ -209,11 +215,38 @@ export function apply(ctx: Context, config: Config): void {
           diff: { text: diff.text, truncated: diff.truncated },
           diffStat: { text: diffStat.text, truncated: diffStat.truncated },
           changedFiles: parseChangedFiles(status.stdout.text),
-          ...cleanupError !== undefined ? { cleanupError } : {},
-        } satisfies SandboxExecResult
+        }
+      } catch (error: unknown) {
+        primaryError = error
       } finally {
         clearTimeout(timer)
       }
+
+      // Clean up the trial worktree on EVERY exit path (success or failure),
+      // never masking the primary result or error.
+      let cleanupError: string | undefined
+      if (config.cleanup !== false) {
+        try {
+          await removeWorktree(ctx, repoRoot, git, worktreePath)
+        } catch (error: unknown) {
+          cleanupError = String(error)
+        }
+      }
+      if (primaryError !== undefined) {
+        if (cleanupError !== undefined) {
+          throw new AggregateError(
+            [primaryError, new Error(cleanupError)],
+            `sandbox_exec failed: ${String(primaryError)}; cleanup failed: ${cleanupError}`,
+          )
+        }
+        throw primaryError
+      }
+      if (result === undefined) {
+        throw new Error('sandbox_exec produced no result')
+      }
+      return cleanupError !== undefined
+        ? { ...result, cleanupError }
+        : result
     },
   }))
 }

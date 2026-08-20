@@ -8,15 +8,15 @@ The model-facing `sandbox_exec` tool: run a command inside an isolated git workt
 
 Registers one tool on `ctx.tools`:
 
-- `sandbox_exec(id?, command)` creates (or reuses) a detached git worktree at `<worktreeRoot>/subagent-<id>`, runs `sh -c <command>` inside it, and returns a structured result with the command's exit status and the trial's `git diff` vs the base commit. The worktree is removed after the call by default, so the trial's changes are disposable until the caller decides to apply them to the real tree.
+- `sandbox_exec(id?, command)` creates (or reuses) a detached git worktree at `<worktreeRoot>/subagent-<id>`, runs `sh -c <command>` inside it, and returns a structured result with the command's exit status and the trial's `git diff` vs the trial worktree's own HEAD. The worktree is removed after the call by default (on success and failure alike), so the trial's changes are disposable until the caller decides to apply them to the real tree.
 
-The result carries `exitCode`/`signal`, bounded `stdout`/`stderr`, the bounded `diff` and `diffStat`, and the `changedFiles` list from `git status --porcelain`. `cleanup: false` keeps the worktree so a later call with the same `id` continues the same trial (its diff accumulates).
+The result carries `exitCode`/`signal`, bounded `stdout`/`stderr`, the bounded `diff` and `diffStat`, and the `changedFiles` list from `git status --porcelain`. The diff is anchored to the trial worktree's HEAD, so a reused trial's diff stays correct even when the main branch moves between calls. `cleanup: false` keeps the worktree so a later call with the same `id` continues the same trial (its diff accumulates); cleanup runs on every exit path and a failed cleanup is reported in `cleanupError` without masking the command's result.
 
 ## Isolation model
 
 - The worktree is created with `git worktree add --detach <path> <baseCommit>` from `baseRef` (default `HEAD`), so it shares the repository's object store but has its own working tree and index.
-- The command runs with `cwd` set to the worktree; the main working tree and the current branch are never touched.
-- `cleanup` (default `true`) removes the worktree with `git worktree remove --force` after capturing the diff, discarding the trial's uncommitted changes.
+- The command runs with `cwd` set to the worktree via `sh -c` (a POSIX shell must be on the PATH); the main working tree and the current branch are never touched.
+- `cleanup` (default `true`) removes the worktree with `git worktree remove --force` after capturing the diff, on every exit path — success, command failure, or an aborted call — discarding the trial's uncommitted changes.
 - Worktrees live under `<cwd>/.dsh/worktrees/` (configurable via `worktreeRoot`), keeping trial state inside the repository rather than the OS temp directory.
 
 ## Output retention envelope
@@ -48,8 +48,9 @@ Prefix-stable while the definition and visibility are unchanged. Plugin lifecycl
 
 ## Known Limitations and Deferred Work
 
-- **Requires git** — the tool shells out to `git` (configurable via `gitBinary`) and `sh`; a repository-less or non-git `cwd` fails loud on `git rev-parse`.
+- **Requires git and a POSIX shell** — the tool shells out to `git` (configurable via `gitBinary`) and runs the command with `sh -c`; a repository-less or non-git `cwd` fails loud on `git rev-parse`, and Windows needs a POSIX shell (e.g. Git Bash or WSL).
 - **One-shot by default** — `cleanup: true` removes the worktree after each call; a persistent trial needs `cleanup: false` plus a stable `id`.
-- **Foreground only** — there is no background/job mode; long trials occupy the tool call until their `timeoutMs` (default 30 s) elapses.
+- **Same-`id` reuse is sequential** — concurrent calls with the *same* `id` resolve to a reused trial (the loser treats the winner's worktree as its own), so concurrent experiments should use distinct `id`s.
+- **Foreground only** — there is no background/job mode; long trials occupy the tool call until their `timeoutMs` (default 30 s) elapses. A timed-out trial still returns its partial diff.
 - **Boundary cases of the envelope** — a diff larger than twice `maxOutputBytes` is tail-cut by the subprocess collect before the head envelope sees it, so an extremely large diff may lose its head as well as its tail.
 - **Local filesystem only** — the worktree is a local git worktree; there is no remote or shared-clone mode.
