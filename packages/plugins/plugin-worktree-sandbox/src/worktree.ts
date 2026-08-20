@@ -96,7 +96,14 @@ export async function collectRetained(
   return { ...retainer.finish(), exitCode: outcome.exitCode }
 }
 
-/** Whether a git worktree is already registered at `path` (absolute). */
+/**
+ * Whether a git worktree is already registered at `path` (absolute).
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param repoRoot - the main repository root; `git worktree list` runs there.
+ * @param git - the git binary path.
+ * @param path - the candidate trial worktree path.
+ * @returns true when the worktree is registered.
+ */
 export async function worktreeExists(ctx: Context, repoRoot: string, git: string, path: string): Promise<boolean> {
   const list = await runCommand(ctx, repoRoot, [git, 'worktree', 'list', '--porcelain'], 16_384)
   // `git worktree list` prints the resolved path; on macOS a `tmpdir()`-based
@@ -113,7 +120,14 @@ export async function worktreeExists(ctx: Context, repoRoot: string, git: string
     .some(line => line.startsWith('worktree ') && candidates.has(line.slice('worktree '.length)))
 }
 
-/** Resolve a ref (e.g. `HEAD`) to its commit hash. */
+/**
+ * Resolve a ref (e.g. `HEAD`) to its commit hash.
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param repoRoot - the main repository root.
+ * @param git - the git binary path.
+ * @param ref - the base ref to resolve.
+ * @returns the resolved commit hash.
+ */
 export async function resolveBaseCommit(ctx: Context, repoRoot: string, git: string, ref: string): Promise<string> {
   const resolved = await runCommand(ctx, repoRoot, [git, 'rev-parse', `${ref}^{commit}`], 4_096)
   if (resolved.exitCode !== 0) {
@@ -127,6 +141,11 @@ export async function resolveBaseCommit(ctx: Context, repoRoot: string, git: str
  * base commit it was detached from; for a reused trial it is the trial's
  * current head, so the returned diff stays anchored to the trial's base even
  * when the main branch moves between calls.
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param worktreePath - the trial worktree path to inspect.
+ * @param git - the git binary path.
+ * @param signal - cancellation for the process tree.
+ * @returns the trial worktree's HEAD commit hash.
  */
 export async function resolveWorktreeHead(ctx: Context, worktreePath: string, git: string, signal?: AbortSignal): Promise<string> {
   const resolved = await runCommand(ctx, worktreePath, [git, 'rev-parse', 'HEAD'], 4_096, signal)
@@ -136,7 +155,14 @@ export async function resolveWorktreeHead(ctx: Context, worktreePath: string, gi
   return resolved.stdout.text.trim()
 }
 
-/** Add a detached trial worktree at `path` from `commit`. */
+/**
+ * Add a detached trial worktree at `path` from `commit`.
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param repoRoot - the main repository root.
+ * @param git - the git binary path.
+ * @param path - the trial worktree path to create.
+ * @param commit - the commit the worktree detaches from.
+ */
 export async function addWorktree(ctx: Context, repoRoot: string, git: string, path: string, commit: string): Promise<void> {
   const added = await runCommand(ctx, repoRoot, [git, 'worktree', 'add', '--detach', path, commit], 8_192)
   if (added.exitCode !== 0) {
@@ -144,7 +170,13 @@ export async function addWorktree(ctx: Context, repoRoot: string, git: string, p
   }
 }
 
-/** Remove a trial worktree (forced, so uncommitted trial changes are discarded). */
+/**
+ * Remove a trial worktree (forced, so uncommitted trial changes are discarded).
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param repoRoot - the main repository root.
+ * @param git - the git binary path.
+ * @param path - the trial worktree path to remove.
+ */
 export async function removeWorktree(ctx: Context, repoRoot: string, git: string, path: string): Promise<void> {
   const removed = await runCommand(ctx, repoRoot, [git, 'worktree', 'remove', '--force', path], 8_192)
   if (removed.exitCode !== 0) {
@@ -152,7 +184,11 @@ export async function removeWorktree(ctx: Context, repoRoot: string, git: string
   }
 }
 
-/** Parse `git status --porcelain` lines into changed/added file paths. */
+/**
+ * Parse `git status --porcelain` lines into changed/added file paths.
+ * @param porcelain - the `git status --porcelain` output.
+ * @returns the changed or added file paths.
+ */
 export function parseChangedFiles(porcelain: string): string[] {
   const files: string[] = []
   for (const line of porcelain.split('\n')) {
