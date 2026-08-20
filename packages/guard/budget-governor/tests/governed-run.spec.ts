@@ -111,7 +111,7 @@ function terminationNotices(parent: Agent): string[] {
     .filter(t => t.includes('terminated by the budget governor'))
 }
 
-describe('plugin-budget-governor real in-process termination', () => {
+describe('budget-governor real in-process termination', () => {
   it('terminates a run whose consecutive tool failures reach the ceiling and reports it to the parent', async () => {
     const { context, parent } = await setup(
       [

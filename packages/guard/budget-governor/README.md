@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-budget-governor
+# @deepseek-ai/dsh-budget-governor
 
 English | [中文](README.zh.md)
 
@@ -17,7 +17,7 @@ All three ceilings are optional, but at least one must be configured — a gover
 ## Config
 
 ```yaml
-- name: '@deepseek-ai/dsh-plugin-budget-governor'
+- name: '@deepseek-ai/dsh-budget-governor'
   config:
     maxChildTokens: 200000
     maxConsecutiveToolFailures: 5
@@ -38,7 +38,7 @@ Termination is once per run: the tripped run is marked and later events on it ar
 
 ## Parent report
 
-On termination the governor injects one structured notice into the parent agent (`parent.inject(...)`, source `{ kind: 'plugin', plugin: 'plugin-budget-governor', form: 'notice' }`), resolved from the child session's durable lineage (`child.session.header.parentSession` → `ctx.agents.get(...)`). This lands as an ordinary `user/message` session event in the parent log — model-visible and reconstructable from the log with no new session event type — and the driver claims it at the parent's next pre-step, immediately after the aborted delegation's own `isError` tool result. When the parent agent is not live, the report is dropped and logged as a warning instead of thrown.
+On termination the governor injects one structured notice into the parent agent (`parent.inject(...)`, source `{ kind: 'plugin', plugin: 'budget-governor', form: 'notice' }`), resolved from the child session's durable lineage (`child.session.header.parentSession` → `ctx.agents.get(...)`). This lands as an ordinary `user/message` session event in the parent log — model-visible and reconstructable from the log with no new session event type — and the driver claims it at the parent's next pre-step, immediately after the aborted delegation's own `isError` tool result. When the parent agent is not live, the report is dropped and logged as a warning instead of thrown.
 
 ## Export shape
 

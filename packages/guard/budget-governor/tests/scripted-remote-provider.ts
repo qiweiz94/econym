@@ -5,7 +5,7 @@
  * claims a local agent that never registers), rather than real detector
  * termination. Real termination is exercised against the real fork-in-process
  * provider driven by a scripted `MockAdapter` (see `governed-run.spec.ts`).
- * @module plugin-budget-governor/test/scripted-remote-provider
+ * @module budget-governor/test/scripted-remote-provider
  */
 
 import type { Context } from '@deepseek-ai/cordis'

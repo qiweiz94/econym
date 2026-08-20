@@ -3,7 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import * as Invariant from '../src/invariant.ts'
 
-describe('plugin-budget-governor invariant companion', () => {
+describe('budget-governor invariant companion', () => {
   it('mounts and disposes without throwing (the installer owns no relations)', async () => {
     const ctx = new Context()
     await ctx.plugin(InvariantRegistry, { enabled: true })
@@ -13,7 +13,7 @@ describe('plugin-budget-governor invariant companion', () => {
   })
 
   it('exposes the companion export shape with no stray default', () => {
-    expect(Invariant.name).toBe('plugin-budget-governor-invariant')
+    expect(Invariant.name).toBe('budget-governor-invariant')
     expect(Invariant.inject).toEqual(['invariants'])
     expect(typeof Invariant.apply).toBe('function')
     expect('default' in Invariant).toBe(false)

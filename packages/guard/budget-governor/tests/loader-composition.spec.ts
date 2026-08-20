@@ -65,7 +65,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-subagent', SubagentRuntime],
     ['@deepseek-ai/dsh-subagent-fork-in-process', ForkProvider],
     ['@deepseek-ai/dsh-token-meter', TokenMeter],
-    ['@deepseek-ai/dsh-plugin-budget-governor', PluginGovernor],
+    ['@deepseek-ai/dsh-budget-governor', PluginGovernor],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -79,28 +79,28 @@ async function boot(pluginEntry: string): Promise<Context> {
   return ctx
 }
 
-describe('plugin-budget-governor real Loader composition through cordis.yml', () => {
+describe('budget-governor real Loader composition through cordis.yml', () => {
   it('has the namespace-plugin export shape (no stray default) — the Loader would drop `inject` otherwise', () => {
     expect('default' in PluginGovernor).toBe(false)
-    expect(PluginGovernor.name).toBe('plugin-budget-governor')
+    expect(PluginGovernor.name).toBe('budget-governor')
     expect(PluginGovernor.inject).toEqual(['subagents', 'agents', 'tokenMeter'])
     expect(typeof PluginGovernor.apply).toBe('function')
     const loader = Object.create(Loader.prototype) as Loader
     const unwrapped = loader.unwrapExports(PluginGovernor) as Record<string, unknown>
     expect(unwrapped).toBe(PluginGovernor)
-    expect(unwrapped.name).toBe('plugin-budget-governor')
+    expect(unwrapped.name).toBe('budget-governor')
     expect(unwrapped.inject).toEqual(['subagents', 'agents', 'tokenMeter'])
   })
 
   it('fails loud at load when no ceiling is configured', async () => {
     await expect(boot(
-      "- name: '@deepseek-ai/dsh-plugin-budget-governor'\n  config: {}",
+      "- name: '@deepseek-ai/dsh-budget-governor'\n  config: {}",
     )).rejects.toThrow(/no ceiling is configured/)
   }, 30_000)
 
   it('terminates a governed child run through the fully Loader-composed real backend', async () => {
     const ctx = await boot(
-      "- name: '@deepseek-ai/dsh-plugin-budget-governor'\n  config:\n    maxConsecutiveToolFailures: 1",
+      "- name: '@deepseek-ai/dsh-budget-governor'\n  config:\n    maxConsecutiveToolFailures: 1",
     )
     ctx.tools.register(defineContentToolFixture({
       name: 'edit',

@@ -13,7 +13,7 @@
  * Remote runs (`local: false`) expose no local agent or session events and
  * are not governed. Named exports preserve loader injection metadata.
  * Decision record: the budget-governor Agent Note.
- * @module @deepseek-ai/dsh-plugin-budget-governor
+ * @module @deepseek-ai/dsh-budget-governor
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -31,7 +31,7 @@ import type { EditChurnConfig } from './types.ts'
 export type { EditChurnConfig, EditToolSpec } from './types.ts'
 export { ConsecutiveFailureCounter, EditChurnWindow } from './detectors.ts'
 
-export const name = 'plugin-budget-governor'
+export const name = 'budget-governor'
 export const inject = ['subagents', 'agents', 'tokenMeter']
 
 /**
@@ -89,7 +89,7 @@ interface ResolvedConfig {
 /** Fail loud on a non-integer or out-of-range ceiling. */
 function requireInteger(field: string, value: number, min: number): number {
   if (!Number.isInteger(value) || value < min) {
-    throw new Error(`plugin-budget-governor: invalid ${field} ${value} — must be an integer >= ${min}`)
+    throw new Error(`budget-governor: invalid ${field} ${value} — must be an integer >= ${min}`)
   }
   return value
 }
@@ -104,7 +104,7 @@ export function resolveConfig(config: Config): ResolvedConfig {
   if (config.maxChildTokens === undefined && config.maxConsecutiveToolFailures === undefined
     && config.editChurn === undefined) {
     throw new Error(
-      'plugin-budget-governor: no ceiling is configured — set at least one of '
+      'budget-governor: no ceiling is configured — set at least one of '
       + '`maxChildTokens`, `maxConsecutiveToolFailures`, or `editChurn`, or remove the plugin',
     )
   }
@@ -126,22 +126,22 @@ export function resolveConfig(config: Config): ResolvedConfig {
     const window = requireInteger('editChurn.window', churn.window, 2)
     if (window < maxSameFileEdits) {
       throw new Error(
-        `plugin-budget-governor: editChurn.window ${window} is smaller than `
+        `budget-governor: editChurn.window ${window} is smaller than `
         + `editChurn.maxSameFileEdits ${maxSameFileEdits} — that ceiling could never trip`,
       )
     }
     if (churn.tools.length === 0) {
-      throw new Error('plugin-budget-governor: editChurn.tools must name at least one edit tool')
+      throw new Error('budget-governor: editChurn.tools must name at least one edit tool')
     }
     const tools = new Map<string, string>()
     for (const tool of churn.tools) {
       if (tool.name.length === 0 || tool.pathArgument.length === 0) {
         throw new Error(
-          'plugin-budget-governor: every editChurn tool needs a non-empty `name` and `pathArgument`',
+          'budget-governor: every editChurn tool needs a non-empty `name` and `pathArgument`',
         )
       }
       if (tools.has(tool.name)) {
-        throw new Error(`plugin-budget-governor: duplicate editChurn tool "${tool.name}"`)
+        throw new Error(`budget-governor: duplicate editChurn tool "${tool.name}"`)
       }
       tools.set(tool.name, tool.pathArgument)
     }

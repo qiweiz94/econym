@@ -27,7 +27,7 @@ async function setup(config: governor.Config): Promise<Context> {
   return ctx
 }
 
-describe('plugin-budget-governor subagent/start intake', () => {
+describe('budget-governor subagent/start intake', () => {
   it('never tracks a remote run (local: false) — the intake guard returns before any warning', async () => {
     const context = await setup({ maxConsecutiveToolFailures: 1 })
     mountScriptedProvider(context, { name: 'remote', stopReason: 'error' })

@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-budget-governor
+# @deepseek-ai/dsh-budget-governor
 
 [English](README.md) | 中文
 
@@ -17,7 +17,7 @@
 ## 配置
 
 ```yaml
-- name: '@deepseek-ai/dsh-plugin-budget-governor'
+- name: '@deepseek-ai/dsh-budget-governor'
   config:
     maxChildTokens: 200000
     maxConsecutiveToolFailures: 5
@@ -38,7 +38,7 @@
 
 ## 父级报告
 
-终止发生时，治理器会向父代理注入一条结构化通知（`parent.inject(...)`，来源为 `{ kind: 'plugin', plugin: 'plugin-budget-governor', form: 'notice' }`），父代理通过子会话持久化的血缘关系解析得到（`child.session.header.parentSession` → `ctx.agents.get(...)`）。该通知作为一条普通的 `user/message` 会话事件落入父级日志 —— 对模型可见，且可完全从日志重建，无需新增会话事件类型 —— 驱动器会在父代理下一次预备步骤时读取它，紧跟在该被中止委托自身的 `isError` 工具结果之后。当父代理不再存活时，报告会被丢弃并记录为警告，而不是抛出异常。
+终止发生时，治理器会向父代理注入一条结构化通知（`parent.inject(...)`，来源为 `{ kind: 'plugin', plugin: 'budget-governor', form: 'notice' }`），父代理通过子会话持久化的血缘关系解析得到（`child.session.header.parentSession` → `ctx.agents.get(...)`）。该通知作为一条普通的 `user/message` 会话事件落入父级日志 —— 对模型可见，且可完全从日志重建，无需新增会话事件类型 —— 驱动器会在父代理下一次预备步骤时读取它，紧跟在该被中止委托自身的 `isError` 工具结果之后。当父代理不再存活时，报告会被丢弃并记录为警告，而不是抛出异常。
 
 ## 导出形态
 

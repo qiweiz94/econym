@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-plugin-budget-governor",
+  "name": "@deepseek-ai/dsh-budget-governor",
   "description": "circuit breaker for runaway delegated child agent runs: configured token, tool-failure, and edit-churn ceilings terminate a tripped child through its agent's cancellation seam and report why to the parent",
   "version": "0.1.0-rc.5",
   "publishConfig": {
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
-    "directory": "packages/plugins/plugin-budget-governor"
+    "directory": "packages/guard/budget-governor"
   },
   "type": "module",
   "main": "lib/index.js",

@@ -4,7 +4,7 @@
  * bounded window stop counting toward churn. The engine in `./index.ts` owns
  * when they are fed and what a trip does.
  *
- * @module @deepseek-ai/dsh-plugin-budget-governor/detectors
+ * @module @deepseek-ai/dsh-budget-governor/detectors
  */
 
 /**
