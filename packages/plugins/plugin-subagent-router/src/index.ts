@@ -2,11 +2,13 @@
  * `subagent` tool: a single model-facing delegation entry that routes to a
  * subagent provider by config-owned policy. The model names only the task (a
  * short description and the full prompt); the router resolves the first
- * registered provider — from the default candidates or a label-routed
- * override — whose start-time capabilities satisfy the configured request
- * options, and dispatches via `ctx.subagents.start`. Provider selection is
- * policy, not model transport vocabulary. Named exports preserve loader
- * injection metadata.
+ * registered provider — from the default candidates or every label-matching
+ * route in config order — whose start-time capabilities satisfy the
+ * configured request options, and dispatches via `ctx.subagents.start`.
+ * A delegation that matches a route never falls back to the default
+ * candidates: routes are policy, and an unroutable delegation fails loud.
+ * Provider selection is policy, not model transport vocabulary. Named
+ * exports preserve loader injection metadata.
  * @module @deepseek-ai/dsh-plugin-subagent-router
  */
 
@@ -17,7 +19,7 @@ import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import { outputValueText, settleForegroundRun } from './foreground.ts'
-import { matchRoute, neededCapabilities, resolveProvider } from './resolver.ts'
+import { matchRouteCandidates, neededCapabilities, resolveProvider } from './resolver.ts'
 
 export const name = 'plugin-subagent-router'
 export const inject = ['tools', 'subagents']
@@ -34,7 +36,7 @@ export interface RoutePolicy {
 export interface Config {
   /** Ordered provider candidates used when no route matches. */
   providers: string[]
-  /** Label-routed provider overrides; the first matching route wins. */
+  /** Label-routed provider overrides; every matching route is tried in order. */
   routes?: RoutePolicy[]
   /** The model-facing tool name. */
   toolName?: string
@@ -126,7 +128,7 @@ export function apply(ctx: Context, config: Config): void {
       }
       // Providers may register later than this plugin (sibling load order and
       // HMR), so resolve against the live registry at call time.
-      const candidates = matchRoute(config, args.description) ?? config.providers
+      const candidates = matchRouteCandidates(config, args.description) ?? config.providers
       const needed = neededCapabilities(config)
       const provider = resolveProvider(ctx, candidates, needed)
       const maxDepth = typeof config.maxDepth === 'number' ? config.maxDepth : undefined

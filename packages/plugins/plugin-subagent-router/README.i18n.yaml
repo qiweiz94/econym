@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-subagent-router/README.md
-README.md: 9985c2c2d6df0c460b88592ccb806502768de288
-README.zh.md: 9885f5a466d9e465ad56c4901c44eb664cbb3839
+README.md: f6bc64ee09d90f1be024473379768809c7b0627f
+README.zh.md: 005341d7568711b9bcddb1307d5b15deece95eb9

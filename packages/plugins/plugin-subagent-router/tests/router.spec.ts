@@ -82,6 +82,34 @@ describe('plugin-subagent-router', () => {
     await ctx.fiber.dispose()
   })
 
+  it('falls through to the next matching route when an earlier one cannot serve', async () => {
+    let seen: string | undefined
+    const ctx = await setup(
+      {
+        providers: ['unused'],
+        routes: [
+          { label: 'summarize', providers: ['ghost'] },
+          { label: 'meeting', providers: ['mock'] },
+        ],
+      },
+      { onStart: (request) => { seen = request.label } },
+    )
+    const result = await callSubagent(ctx, { description: 'Summarize the meeting notes', prompt: 'summarize' })
+    expect(result.isError).toBe(false)
+    expect(seen).toBe('Summarize the meeting notes')
+    await ctx.fiber.dispose()
+  })
+
+  it('fails loud when a matched route cannot serve, never falling back to defaults', async () => {
+    const ctx = await setup(
+      { providers: ['mock'], routes: [{ label: 'summarize', providers: ['ghost'] }] },
+    )
+    const result = await callSubagent(ctx, { description: 'Summarize the notes', prompt: 'summarize' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('none of the configured providers (ghost) are currently registered')
+    await ctx.fiber.dispose()
+  })
+
   it('rejects a delegation when none of the configured providers are registered', async () => {
     const ctx = await setup({ providers: ['ghost'] })
     const result = await callSubagent(ctx, { description: 'do a thing', prompt: 'p' })

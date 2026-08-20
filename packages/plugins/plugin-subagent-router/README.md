@@ -2,13 +2,13 @@
 
 English | [中文](README.zh.md)
 
-The model-facing `subagent` tool: a single delegation entry that routes a delegated task to a subagent provider selected by config-owned policy. The model names only the task (a short description and the full prompt); the router resolves the first registered provider — from the default candidates or a label-routed override — whose start-time capabilities satisfy the configured request options, and dispatches via `ctx.subagents.start`.
+The model-facing `subagent` tool: a single delegation entry that routes a delegated task to a subagent provider selected by config-owned policy. The model names only the task (a short description and the full prompt); the router resolves the first registered provider — from the default candidates or the label-matching routes in config order — whose start-time capabilities satisfy the configured request options, and dispatches via `ctx.subagents.start`.
 
 ## What it does
 
 Registers one tool on `ctx.tools`:
 
-- `subagent(description, prompt)` delegates a self-contained task to a subagent and waits for its result. The router matches `description` (a short task label) against the configured `routes`; when a route matches, its ordered `providers` candidates win, otherwise the default `providers` list is used. For each candidate in order, the router skips unregistered providers and providers whose `SubagentCapabilities` do not cover the delegation's needs (a configured `persona` requires the `persona` capability, `toolFilter` requires `toolFilter`, a numeric `maxDepth` requires `depthLimit`), dispatching to the first compatible one. When no candidate can serve the delegation, the call fails loud with the candidates tried and the missing capabilities.
+- `subagent(description, prompt)` delegates a self-contained task to a subagent and waits for its result. The router matches `description` (a short task label) against the configured `routes`; every matching route contributes its ordered `providers` candidates in config order, otherwise the default `providers` list is used. For each candidate in order, the router skips unregistered providers and providers whose `SubagentCapabilities` do not cover the delegation's needs (a configured `persona` requires the `persona` capability, `toolFilter` requires `toolFilter`, a numeric `maxDepth` requires `depthLimit`), dispatching to the first compatible one. When no candidate can serve the delegation, the call fails loud with the candidates tried and the missing capabilities.
 
 The child's final output is returned to the model as the tool result; a non-`completed` stop reason (`aborted`, `error`, `max-tokens`, `refusal`, or an unknown backend reason) is reported as an `isError` result that still preserves the child's partial output.
 
@@ -17,7 +17,7 @@ The child's final output is returned to the model as the tool result; a non-`com
 Provider selection is **policy, not model transport vocabulary** — the model never names a provider or transport. The policy is entirely config-owned and deterministic:
 
 - `providers` (required) — the ordered default candidates tried when no route matches.
-- `routes` — label-routed overrides: each entry has a `label` (matched case-insensitively as a substring of the task `description`) and its own ordered `providers` candidates. The first matching route wins.
+- `routes` — label-routed overrides: each entry has a `label` (matched case-insensitively as a substring of the task `description`) and its own ordered `providers` candidates. Every matching route contributes its candidates in config order; a delegation that matches any route never falls back to the default `providers` — routes are policy, and an unroutable delegation fails loud.
 - `persona`, `toolFilter`, `maxDepth` — request options forwarded to the provider; setting one makes the matching provider capability required (fail-loud when the resolved provider lacks it).
 - `agentOptions` — a per-child model/provider override (`provider`, `model`, `maxTokens`).
 
