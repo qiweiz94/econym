@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/plugins/plugin-budget-governor/README.md
+README.md: 56cddcfb37df7ccbf430e3a74c77a155eed7742b
+README.zh.md: d3e5675be06f0527f910b2274e211bdabc6751f0
