@@ -54,7 +54,9 @@ export async function runCommand(
   return {
     exitCode: outcome.exitCode,
     signal: outcome.signal,
+    /* v8 ignore next -- this spawn always configures bounded capture for stdout, so the collector exists. */
     stdout: { text: stdout?.text ?? '', truncated: stdout?.lossy ?? false },
+    /* v8 ignore next -- this spawn always configures bounded capture for stderr, so the collector exists. */
     stderr: { text: stderr?.text ?? '', truncated: stderr?.lossy ?? false },
   }
 }
@@ -86,6 +88,7 @@ export async function collectRetained(
   const retainer = new TextRetainer({ kind: 'head', maxBytes })
   const reader = handle.stdout
   const consume = (async (): Promise<void> => {
+    /* v8 ignore next -- stdout is always piped by this spawn's stdio config, so the reader exists. */
     if (reader === undefined) return
     for await (const chunk of reader as AsyncIterable<Buffer>) {
       retainer.push(chunk)
@@ -195,6 +198,7 @@ export function parseChangedFiles(porcelain: string): string[] {
     if (line.length === 0) continue
     // Two status columns, then a space, then the path (quoted when it contains
     // special characters). Renames use the destination after ` -> `.
+    /* v8 ignore next -- String.split always yields at least one segment, so pop() cannot return undefined. */
     const path = line.slice(3).replace(/^"|"$/g, '').split(' -> ').pop() ?? ''
     if (path.length > 0) files.push(path)
   }

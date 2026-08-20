@@ -37,6 +37,7 @@ export async function collectTypeScriptFiles(
   while (stack.length > 0) {
     signal?.throwIfAborted()
     const directory = stack.pop()
+    /* v8 ignore next -- the loop condition guarantees a non-empty stack; the guard answers pop()'s optional type. */
     if (directory === undefined) break
     const entries = await readdir(directory, { withFileTypes: true })
     signal?.throwIfAborted()

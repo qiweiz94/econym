@@ -393,6 +393,33 @@ describe('dsh-plugin-ast-context', () => {
     expect(value.skippedFiles).toBe(2)
   })
 
+  it('renders a single skipped candidate in the singular', async () => {
+    const dir = await fixtureTree()
+    // All three candidates are collected; only the unparseable one skips.
+    const ctx = await setup({ maxFiles: 3 })
+    const result = await callDirectoryOutline(ctx, dir)
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('1 candidate file skipped')
+    expect(text(result)).not.toContain('files skipped')
+
+    // A directory whose every candidate outlines renders no skip note at all.
+    const clean = await callDirectoryOutline(ctx, join(dir, 'lib', 'deep'))
+    expect(clean.isError).toBe(false)
+    expect(text(clean)).toContain('1 file outlined')
+    expect(text(clean)).not.toContain('skipped')
+  })
+
+  it('applies the documented maxFiles default when apply runs without loader-filled config', async () => {
+    const dir = await fixtureTree()
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    tool.apply(ctx, {})
+    const result = await callDirectoryOutline(ctx, dir)
+    expect(result.isError).toBe(false)
+    await ctx.fiber.dispose()
+  })
+
   it('respects the maxBytes cap per file in directory outlines', async () => {
     const dir = await fixtureTree()
     const ctx = await setup({ maxBytes: 10 })

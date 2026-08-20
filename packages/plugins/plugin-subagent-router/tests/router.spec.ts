@@ -162,4 +162,74 @@ describe('plugin-subagent-router', () => {
       routes: [{ label: '', providers: ['mock'] }],
     })).rejects.toThrow(/string length >= 1/)
   })
+
+  it('rejects a toolFilter that names neither allow nor deny outside the loader', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SubagentRuntime)
+    expect(() => {
+      tool.apply(ctx, { providers: ['mock'], toolFilter: {} })
+    }).toThrow('names neither `allow` nor `deny`')
+    await ctx.fiber.dispose()
+  })
+
+  it('defaults the tool name when apply runs without loader-filled config', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SubagentRuntime)
+    mountScriptedProvider(ctx, { name: 'mock' })
+    tool.apply(ctx, { providers: ['mock'] })
+    const result = await callSubagent(ctx, { description: 'default name', prompt: 'p' })
+    expect(result.isError).toBe(false)
+    await ctx.fiber.dispose()
+  })
+
+  it('classifies delegations as parallel-safe', async () => {
+    const ctx = await setup({ providers: ['mock'] })
+    expect(ctx.tools.executionMode({
+      name: 'subagent',
+      arguments: { description: 'd', prompt: 'p' },
+      callId: CallId('router-mode'),
+      signal: testToolSignal,
+    })).toEqual({ kind: 'parallel' })
+    await ctx.fiber.dispose()
+  })
+
+  it('forwards every configured delegation option into the start request', async () => {
+    let seen: { agentOptions?: unknown; persona?: unknown; toolFilter?: unknown; maxDepth?: unknown } | undefined
+    const ctx = await setup({
+      providers: ['mock'],
+      agentOptions: { provider: 'override-provider', model: 'override-model', maxTokens: 64 },
+      persona: 'trial persona',
+      toolFilter: { allow: ['probe'] },
+      maxDepth: 2,
+    }, {
+      onStart: (request) => { seen = request },
+    })
+    const result = await callSubagent(ctx, { description: 'forward options', prompt: 'p' })
+    expect(result.isError).toBe(false)
+    expect(seen).toMatchObject({
+      agentOptions: { provider: 'override-provider', model: 'override-model', maxTokens: 64 },
+      persona: 'trial persona',
+      toolFilter: { allow: ['probe'] },
+      maxDepth: 2,
+    })
+    await ctx.fiber.dispose()
+  })
+
+  it('lists toolFilter and depthLimit capability gaps without persona', async () => {
+    const ctx = await setup({
+      providers: ['mock'],
+      toolFilter: { deny: ['probe'] },
+      maxDepth: 3,
+    }, {
+      capabilities: { outputSchema: true, depthLimit: false, toolFilter: false, persona: true },
+    })
+    const result = await callSubagent(ctx, { description: 'gaps', prompt: 'p' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('capabilities (toolFilter, depthLimit)')
+    await ctx.fiber.dispose()
+  })
 })
