@@ -43,15 +43,18 @@ export function satisfiesCapabilities(capabilities: SubagentCapabilities, needed
  * Match a delegated task label against the configured label routes.
  * @param config - the router configuration.
  * @param label - the delegated task's short description.
- * @returns the first matching route's ordered provider candidates, or undefined
- * when no route matches (the caller falls back to the default candidates).
+ * @returns every matching route's ordered provider candidates, flattened in
+ * config order (each route's providers stay ordered, and earlier routes stay
+ * ahead of later ones), or undefined when no route matches (the caller falls
+ * back to the default candidates).
  */
-export function matchRoute(config: Config, label: string): readonly string[] | undefined {
+export function matchRouteCandidates(config: Config, label: string): readonly string[] | undefined {
   const needle = label.toLowerCase()
+  const candidates: string[] = []
   for (const route of config.routes ?? []) {
-    if (needle.includes(route.label.toLowerCase())) return route.providers
+    if (needle.includes(route.label.toLowerCase())) candidates.push(...route.providers)
   }
-  return undefined
+  return candidates.length > 0 ? candidates : undefined
 }
 
 /**

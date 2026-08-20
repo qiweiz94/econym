@@ -155,4 +155,17 @@ describe('plugin-worktree-sandbox', () => {
     expect(text(result)).toContain('git rev-parse')
     await ctx.fiber.dispose()
   })
+
+  it('rejects a trial id that escapes the trial root', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const ctx = await setup({ cwd: repo })
+    const traversal = await callSandbox(ctx, { id: '../../../evil', command: 'echo pwned' })
+    expect(traversal.isError).toBe(true)
+    expect(text(traversal)).toContain('invalid sandbox trial id')
+    const tooLong = await callSandbox(ctx, { id: 'a'.repeat(65), command: 'echo pwned' })
+    expect(tooLong.isError).toBe(true)
+    expect(text(tooLong)).toContain('invalid sandbox trial id')
+    await ctx.fiber.dispose()
+  })
 })

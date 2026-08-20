@@ -2,13 +2,13 @@
 
 [English](README.md) | 中文
 
-模型可见的 `subagent` 工具：一个统一的委托入口，按配置所拥有的策略把委托任务路由到某个子代理（subagent）provider。模型只需描述任务（一句简短描述和完整提示词）；路由器按顺序解析第一个已注册且其启动期能力（start-time capabilities）满足配置请求选项的 provider——来自默认候选列表或按标签命中的路由覆盖——并通过 `ctx.subagents.start` 派发。
+模型可见的 `subagent` 工具：一个统一的委托入口，按配置所拥有的策略把委托任务路由到某个子代理（subagent）provider。模型只需描述任务（一句简短描述和完整提示词）；路由器按顺序解析第一个已注册且其启动期能力（start-time capabilities）满足配置请求选项的 provider——来自默认候选列表或按配置顺序命中的标签路由——并通过 `ctx.subagents.start` 派发。
 
 ## 功能
 
 在 `ctx.tools` 上注册一个工具：
 
-- `subagent(description, prompt)` 把自包含任务委托给子代理并等待其结果。路由器把 `description`（简短任务标签）与配置的 `routes` 匹配；命中时使用该路由的 `providers` 候选，否则使用默认 `providers` 列表。按顺序逐个候选：跳过未注册的 provider，也跳过 `SubagentCapabilities` 不覆盖本次委托需求的 provider（配置了 `persona` 就需要 `persona` 能力，`toolFilter` 需要 `toolFilter`，数字 `maxDepth` 需要 `depthLimit`），派发给第一个兼容者。没有候选能服务时，调用会大声失败，并列出尝试过的候选与缺失的能力。
+- `subagent(description, prompt)` 把自包含任务委托给子代理并等待其结果。路由器把 `description`（简短任务标签）与配置的 `routes` 匹配；每条命中的路由都按配置顺序贡献其 `providers` 候选，无命中时使用默认 `providers` 列表。按顺序逐个候选：跳过未注册的 provider，也跳过 `SubagentCapabilities` 不覆盖本次委托需求的 provider（配置了 `persona` 就需要 `persona` 能力，`toolFilter` 需要 `toolFilter`，数字 `maxDepth` 需要 `depthLimit`），派发给第一个兼容者。没有候选能服务时，调用会大声失败，并列出尝试过的候选与缺失的能力。
 
 子代理的最终输出作为工具结果返回给模型；非 `completed` 的终止原因（`aborted`、`error`、`max-tokens`、`refusal` 或未知的后端原因）会作为 `isError` 结果上报，同时仍保留子代理的部分输出。
 
@@ -17,7 +17,7 @@
 Provider 选择是**策略，而非模型的传输词汇**——模型永远不会指名 provider 或传输方式。策略完全由配置拥有且确定：
 
 - `providers`（必填）——无路由命中时按顺序尝试的默认候选。
-- `routes`——按标签命中的覆盖：每条含 `label`（对任务 `description` 不区分大小写的子串匹配）和各自的 `providers` 候选。第一条命中的路由生效。
+- `routes`——按标签命中的覆盖：每条含 `label`（对任务 `description` 不区分大小写的子串匹配）和各自的 `providers` 候选。每条命中的路由都按配置顺序贡献其候选；任何命中路由的委托都不会回退到默认 `providers`——路由即策略，无法路由的委托大声失败。
 - `persona`、`toolFilter`、`maxDepth`——转发给 provider 的请求选项；设置任一都会要求对应 provider 能力（当解析出的 provider 缺失时大声失败）。
 - `agentOptions`——按子代理的模型/provider 覆盖（`provider`、`model`、`maxTokens`）。
 

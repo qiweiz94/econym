@@ -100,7 +100,7 @@ export function apply(ctx: Context, config: Config): void {
     parameters: {
       id: {
         type: 'string',
-        description: 'Trial id naming the worktree `.dsh/worktrees/subagent-<id>`. Omit to auto-generate; reuse an id to keep the same trial worktree across calls (with `cleanup: false`).',
+        description: 'Trial id naming the worktree `.dsh/worktrees/subagent-<id>`; letters, digits, `-` and `_`, max 64 characters. Omit to auto-generate; reuse an id to keep the same trial worktree across calls (with `cleanup: false`).',
       },
       command: {
         type: 'string',
@@ -163,6 +163,11 @@ export function apply(ctx: Context, config: Config): void {
       const git = config.gitBinary ?? 'git'
       const envelope = config.maxOutputBytes ?? 15_000
       const id = typeof args.id === 'string' && args.id.length > 0 ? args.id : randomUUID().slice(0, 8)
+      // The id lands in a worktree path; the tool JSON validator supports no
+      // pattern constraint, so reject traversal outright before any operation.
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
+        throw new Error(`invalid sandbox trial id ${JSON.stringify(id)}: allowed characters are letters, digits, - and _, max length 64`)
+      }
       const worktreePath = join(worktreeRoot, `subagent-${id}`)
       const baseRef = config.baseRef ?? 'HEAD'
 

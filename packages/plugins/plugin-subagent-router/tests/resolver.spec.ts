@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SubagentProvider } from '@deepseek-ai/dsh-subagent'
 import type { Config } from '../src/index.ts'
-import { matchRoute, neededCapabilities, resolveProvider, satisfiesCapabilities } from '../src/resolver.ts'
+import { matchRouteCandidates, neededCapabilities, resolveProvider, satisfiesCapabilities } from '../src/resolver.ts'
 
 const FULL: SubagentProvider = {
   name: 'full',
@@ -39,13 +39,26 @@ describe('plugin-subagent-router resolver', () => {
     expect(satisfiesCapabilities(MINIMAL.capabilities, { persona: false, toolFilter: false, depthLimit: false })).toBe(true)
   })
 
-  it('matches a delegated task label to a configured route, case-insensitively', () => {
+  it('matches a delegated task label to the configured routes, case-insensitively', () => {
     const config: Config = {
       providers: ['spawn'],
       routes: [{ label: 'summarize', providers: ['codex'] }],
     }
-    expect(matchRoute(config, 'Summarize the meeting notes')).toEqual(['codex'])
-    expect(matchRoute(config, 'refactor the module')).toBeUndefined()
+    expect(matchRouteCandidates(config, 'Summarize the meeting notes')).toEqual(['codex'])
+    expect(matchRouteCandidates(config, 'refactor the module')).toBeUndefined()
+  })
+
+  it('flattens every matching route in config order', () => {
+    const config: Config = {
+      providers: ['spawn'],
+      routes: [
+        { label: 'summarize', providers: ['codex', 'claude'] },
+        { label: 'meeting', providers: ['opus'] },
+        { label: 'unrelated', providers: ['gemini'] },
+      ],
+    }
+    // Both routes match; the non-matching route is skipped; per-route order holds.
+    expect(matchRouteCandidates(config, 'Summarize the meeting notes')).toEqual(['codex', 'claude', 'opus'])
   })
 
   it('resolves the first registered provider that satisfies the needs', () => {
