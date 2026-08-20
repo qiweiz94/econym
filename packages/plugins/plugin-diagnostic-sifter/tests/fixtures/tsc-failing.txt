@@ -1,0 +1,6 @@
+src/consumer.ts(1,10): error TS2724: '"./upstream"' has no exported member named 'goodNam'. Did you mean 'goodName'?
+src/elab.ts(4,6): error TS2345: Argument of type '{ alpha: { beta: string; }; gamma: number; }' is not assignable to parameter of type 'Wide'.
+  The types of 'alpha.beta' are incompatible between these types.
+    Type 'string' is not assignable to type 'number'.
+src/missing.ts(1,23): error TS2307: Cannot find module './does-not-exist' or its corresponding type declarations.
+src/upstream.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
