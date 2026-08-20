@@ -7,8 +7,9 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { SubagentCapabilities } from '@deepseek-ai/dsh-subagent'
-import type { Config } from './index.ts'
+import type { Config, RoutePolicy } from './index.ts'
 import type { NeededCapabilities } from './types.ts'
 
 /**
@@ -49,16 +50,37 @@ export function satisfiesCapabilities(capabilities: SubagentCapabilities, needed
  * matches (the caller falls back to the default candidates).
  */
 export function matchRouteCandidates(config: Config, label: string): readonly string[] | undefined {
-  const needle = label.toLowerCase()
   const candidates: string[] = []
-  for (const route of config.routes ?? []) {
-    if (needle.includes(route.label.toLowerCase())) {
-      for (const provider of route.providers) {
-        if (!candidates.includes(provider)) candidates.push(provider)
-      }
+  for (const route of matchingRoutes(config, label)) {
+    for (const provider of route.providers) {
+      if (!candidates.includes(provider)) candidates.push(provider)
     }
   }
   return candidates.length > 0 ? candidates : undefined
+}
+
+/**
+ * Resolve the per-route child options for a delegation: the first matching
+ * route (config order) that declares `agentOptions` wins, mirroring the
+ * earlier-routes-first precedence of the candidate list.
+ * @param config - the router configuration.
+ * @param label - the delegated task's short description.
+ * @returns the winning route's `agentOptions`, or undefined when no matching
+ * route declares any (the caller falls back to the global `agentOptions`).
+ */
+export function matchRouteAgentOptions(config: Config, label: string): AgentOptions | undefined {
+  for (const route of matchingRoutes(config, label)) {
+    if (route.agentOptions !== undefined) return route.agentOptions
+  }
+  return undefined
+}
+
+/** Yield every configured route whose label matches the delegation, in config order. */
+function* matchingRoutes(config: Config, label: string): Generator<RoutePolicy> {
+  const needle = label.toLowerCase()
+  for (const route of config.routes ?? []) {
+    if (needle.includes(route.label.toLowerCase())) yield route
+  }
 }
 
 /**

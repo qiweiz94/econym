@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SubagentProvider } from '@deepseek-ai/dsh-subagent'
 import type { Config } from '../src/index.ts'
-import { matchRouteCandidates, neededCapabilities, resolveProvider, satisfiesCapabilities } from '../src/resolver.ts'
+import { matchRouteAgentOptions, matchRouteCandidates, neededCapabilities, resolveProvider, satisfiesCapabilities } from '../src/resolver.ts'
 
 const FULL: SubagentProvider = {
   name: 'full',
@@ -94,5 +94,20 @@ describe('plugin-subagent-router resolver', () => {
   it('matches nothing when the config carries no routes key at all', () => {
     expect(matchRouteCandidates({ providers: ['solo'] }, 'any label'))
       .toBeUndefined()
+  })
+
+  it('resolves per-route agentOptions from the first matching route that declares any', () => {
+    const options = { provider: 'p', model: 'm', maxTokens: 8 }
+    const config = {
+      providers: ['solo'],
+      routes: [
+        { label: 'probe', providers: ['a'] },
+        { label: 'probe', providers: ['b'], agentOptions: options },
+        { label: 'probe', providers: ['c'], agentOptions: { provider: 'x', model: 'y', maxTokens: 9 } },
+      ],
+    }
+    expect(matchRouteAgentOptions(config, 'run the probe')).toEqual(options)
+    expect(matchRouteAgentOptions(config, 'no match here')).toBeUndefined()
+    expect(matchRouteAgentOptions({ providers: ['solo'] }, 'run the probe')).toBeUndefined()
   })
 })
