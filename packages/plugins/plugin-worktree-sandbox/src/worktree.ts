@@ -53,7 +53,7 @@ export async function runCommand(
   const stderr = handle.collected.stderr?.readFrom(0)
   return {
     exitCode: outcome.exitCode,
-    signal: outcome.signal === null ? null : String(outcome.signal),
+    signal: outcome.signal,
     stdout: { text: stdout?.text ?? '', truncated: stdout?.lossy ?? false },
     stderr: { text: stderr?.text ?? '', truncated: stderr?.lossy ?? false },
   }
@@ -87,7 +87,7 @@ export async function collectRetained(
   const reader = handle.stdout
   const consume = (async (): Promise<void> => {
     if (reader === undefined) return
-    for await (const chunk of reader) {
+    for await (const chunk of reader as AsyncIterable<Buffer>) {
       retainer.push(chunk)
     }
   })()

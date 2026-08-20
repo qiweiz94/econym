@@ -188,7 +188,7 @@ export function apply(ctx: Context, config: Config): void {
       }
 
       const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), config.timeoutMs ?? 30_000)
+      const timer = setTimeout(() => { controller.abort() }, config.timeoutMs ?? 30_000)
       // The timeout bounds the COMMAND; caller cancellation (exec.signal) also
       // cancels the follow-up capture so a timed-out trial still reports its
       // partial diff. The follow-up git steps never inherit the timeout signal.
@@ -238,13 +238,14 @@ export function apply(ctx: Context, config: Config): void {
         }
       }
       if (primaryError !== undefined) {
+        const primary = primaryError instanceof Error ? primaryError : new Error(JSON.stringify(primaryError))
         if (cleanupError !== undefined) {
           throw new AggregateError(
-            [primaryError, new Error(cleanupError)],
-            `sandbox_exec failed: ${String(primaryError)}; cleanup failed: ${cleanupError}`,
+            [primary, new Error(cleanupError)],
+            `sandbox_exec failed: ${primary.message}; cleanup failed: ${cleanupError}`,
           )
         }
-        throw primaryError
+        throw primary
       }
       if (result === undefined) {
         throw new Error('sandbox_exec produced no result')
