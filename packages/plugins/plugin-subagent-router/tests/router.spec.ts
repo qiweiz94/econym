@@ -219,6 +219,45 @@ describe('plugin-subagent-router', () => {
     await ctx.fiber.dispose()
   })
 
+  it('applies the first matching route agentOptions over the global override', async () => {
+    const seen: unknown[] = []
+    const ctx = await setup({
+      providers: ['mock'],
+      agentOptions: { provider: 'global-p', model: 'global-m', maxTokens: 32 },
+      routes: [
+        { label: 'unrelated', providers: ['mock'], agentOptions: { provider: 'never-p', model: 'never-m', maxTokens: 1 } },
+        { label: 'trial', providers: ['mock'], agentOptions: { provider: 'route-p', model: 'route-m', maxTokens: 64 } },
+        { label: 'ial pro', providers: ['mock'], agentOptions: { provider: 'later-p', model: 'later-m', maxTokens: 128 } },
+      ],
+    }, {
+      onStart: (request) => { seen.push(request.agentOptions) },
+    })
+    // Matches routes 2 and 3; the earlier route's options win.
+    const routed = await callSubagent(ctx, { description: 'run the trial probe', prompt: 'p' })
+    expect(routed.isError).toBe(false)
+    expect(seen.at(-1)).toEqual({ provider: 'route-p', model: 'route-m', maxTokens: 64 })
+    // No route matches: the global override applies.
+    const unrouted = await callSubagent(ctx, { description: 'ordinary work', prompt: 'p' })
+    expect(unrouted.isError).toBe(false)
+    expect(seen.at(-1)).toEqual({ provider: 'global-p', model: 'global-m', maxTokens: 32 })
+    await ctx.fiber.dispose()
+  })
+
+  it('falls back to the global agentOptions when the matching route declares none', async () => {
+    const seen: unknown[] = []
+    const ctx = await setup({
+      providers: ['mock'],
+      agentOptions: { provider: 'global-p', model: 'global-m', maxTokens: 32 },
+      routes: [{ label: 'trial', providers: ['mock'] }],
+    }, {
+      onStart: (request) => { seen.push(request.agentOptions) },
+    })
+    const routed = await callSubagent(ctx, { description: 'run the trial probe', prompt: 'p' })
+    expect(routed.isError).toBe(false)
+    expect(seen.at(-1)).toEqual({ provider: 'global-p', model: 'global-m', maxTokens: 32 })
+    await ctx.fiber.dispose()
+  })
+
   it('lists toolFilter and depthLimit capability gaps without persona', async () => {
     const ctx = await setup({
       providers: ['mock'],

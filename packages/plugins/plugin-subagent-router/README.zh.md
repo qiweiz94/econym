@@ -17,7 +17,7 @@
 Provider 选择是**策略，而非模型的传输词汇**——模型永远不会指名 provider 或传输方式。策略完全由配置拥有且确定：
 
 - `providers`（必填）——无路由命中时按顺序尝试的默认候选。
-- `routes`——按标签命中的覆盖：每条含 `label`（对任务 `description` 不区分大小写的子串匹配）和各自的 `providers` 候选。每条命中的路由都按配置顺序贡献其候选；任何命中路由的委托都不会回退到默认 `providers`——路由即策略，无法路由的委托大声失败。`label` 必须非空（空标签会命中每一次委托，加载时会被拒绝）。
+- `routes`——按标签命中的覆盖：每条含 `label`（对任务 `description` 不区分大小写的子串匹配）、各自的 `providers` 候选，以及可选的按路由 `agentOptions`（`provider`、`model`、`maxTokens`），转发给该路由命中的委托的子代理——第一条声明了它的命中路由胜过全局 `agentOptions`，因此路由可以把任务类别钉到不同模型档位。每条命中的路由都按配置顺序贡献其候选；任何命中路由的委托都不会回退到默认 `providers`——路由即策略，无法路由的委托大声失败。`label` 必须非空（空标签会命中每一次委托，加载时会被拒绝）。
 - `persona`、`toolFilter`、`maxDepth`——转发给 provider 的请求选项；设置任一都会要求对应 provider 能力（当解析出的 provider 缺失时大声失败）。
 - `agentOptions`——按子代理的模型/provider 覆盖（`provider`、`model`、`maxTokens`）。
 

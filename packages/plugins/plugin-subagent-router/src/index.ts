@@ -19,7 +19,7 @@ import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { outputValueText, settleForegroundRun } from '@deepseek-ai/dsh-subagent'
 import type { SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
-import { matchRouteCandidates, neededCapabilities, resolveProvider } from './resolver.ts'
+import { matchRouteAgentOptions, matchRouteCandidates, neededCapabilities, resolveProvider } from './resolver.ts'
 
 export const name = 'plugin-subagent-router'
 export const inject = ['tools', 'subagents']
@@ -30,6 +30,12 @@ export interface RoutePolicy {
   label: string
   /** Ordered provider candidates tried in sequence. */
   providers: string[]
+  /**
+   * Per-route child model/provider override forwarded to the provider for
+   * delegations this route matches; the first matching route that declares one
+   * wins over the global `agentOptions`.
+   */
+  agentOptions?: AgentOptions
 }
 
 /** Runtime configuration for the routing delegation tool. */
@@ -55,23 +61,30 @@ export interface Config {
   maxDepth?: number | 'provider-managed'
 }
 
+// Prevent Schemastery from materializing an omitted agentOptions as `{}`;
+// shared by the global field and each route's per-route override.
+/* jscpd:ignore-start -- deliberate parallel of dsh-tool-subagent's inline
+   agentOptions schema; the two tools evolve these independently. */
+const agentOptionsSchema = (): z<AgentOptions> => z.object({
+  provider: z.string(),
+  model: z.string(),
+  maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
+}).default(undefined as unknown as { provider: string; model: string; maxTokens: number })
+/* jscpd:ignore-end */
+
 /** Runtime configuration schema for the routing delegation tool. */
 export const Config: z<Config> = z.object({
   providers: z.array(z.string()).min(1).required(),
   routes: z.array(z.object({
     label: z.string().min(1).required(),
     providers: z.array(z.string()).min(1).required(),
+    agentOptions: agentOptionsSchema(),
   })).default([]),
   toolName: z.string().default('subagent'),
   /* jscpd:ignore-start -- deliberate parallel of dsh-tool-subagent's delegation
      option fields; the two tools evolve these independently (tool-subagent
      defaults maxDepth to 3, this router leaves it unset). */
-  // Prevent Schemastery from materializing omitted agentOptions as `{}`.
-  agentOptions: z.object({
-    provider: z.string(),
-    model: z.string(),
-    maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
-  }).default(undefined as unknown as { provider: string; model: string; maxTokens: number }),
+  agentOptions: agentOptionsSchema(),
   persona: z.string(),
   // Preserve omission; Schemastery's `{ allow: [] }` default would deny every tool.
   toolFilter: z.object({
@@ -140,6 +153,7 @@ export function apply(ctx: Context, config: Config): void {
       const needed = neededCapabilities(config)
       const provider = resolveProvider(ctx, candidates, needed)
       const maxDepth = typeof config.maxDepth === 'number' ? config.maxDepth : undefined
+      const agentOptions = matchRouteAgentOptions(config, args.description) ?? config.agentOptions
       /* jscpd:ignore-start -- forwards the parallel option fields above into
          the start request; the fragment tracks this tool's own Config, not
          dsh-tool-subagent's. */
@@ -148,7 +162,7 @@ export function apply(ctx: Context, config: Config): void {
         prompt: [{ type: 'text', text: args.prompt }] as ContentBlock[],
         parent,
         signal: exec.signal,
-        ...config.agentOptions !== undefined ? { agentOptions: config.agentOptions } : {},
+        ...agentOptions !== undefined ? { agentOptions } : {},
         ...config.persona !== undefined ? { persona: config.persona } : {},
         ...config.toolFilter !== undefined ? { toolFilter: config.toolFilter } : {},
         ...maxDepth !== undefined ? { maxDepth } : {},
