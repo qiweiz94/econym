@@ -17,8 +17,8 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import { outputValueText, settleForegroundRun } from '@deepseek-ai/dsh-subagent'
 import type { SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
-import { outputValueText, settleForegroundRun } from './foreground.ts'
 import { matchRouteCandidates, neededCapabilities, resolveProvider } from './resolver.ts'
 
 export const name = 'plugin-subagent-router'
@@ -63,6 +63,9 @@ export const Config: z<Config> = z.object({
     providers: z.array(z.string()).min(1).required(),
   })).default([]),
   toolName: z.string().default('subagent'),
+  /* jscpd:ignore-start -- deliberate parallel of dsh-tool-subagent's delegation
+     option fields; the two tools evolve these independently (tool-subagent
+     defaults maxDepth to 3, this router leaves it unset). */
   // Prevent Schemastery from materializing omitted agentOptions as `{}`.
   agentOptions: z.object({
     provider: z.string(),
@@ -76,6 +79,7 @@ export const Config: z<Config> = z.object({
     deny: z.array(z.string()).default(undefined as unknown as string[]),
   }).default(undefined as unknown as { allow: string[]; deny: string[] }),
   maxDepth: z.union([z.natural().max(Number.MAX_SAFE_INTEGER), z.const('provider-managed' as const)]),
+  /* jscpd:ignore-end */
 })
 
 /**
@@ -107,6 +111,9 @@ export function apply(ctx: Context, config: Config): void {
       },
     },
     output: {
+      /* jscpd:ignore-start -- tool schemas are consumer-owned (capability-seam
+         rule); this block states dsh-subagent's ForegroundToolResult in tool
+         schema form, the same statement dsh-tool-subagent makes. */
       schema: {
         type: 'object',
         additionalProperties: false,
@@ -117,6 +124,7 @@ export function apply(ctx: Context, config: Config): void {
         },
       },
       render: (_args, value) => [{ type: 'text', text: outputValueText(value.output) }],
+      /* jscpd:ignore-end */
     },
     // Children never mutate the parent session; the run is one foreground
     // delegation with no parent-owned durable write beyond the tool/result.
@@ -132,6 +140,9 @@ export function apply(ctx: Context, config: Config): void {
       const needed = neededCapabilities(config)
       const provider = resolveProvider(ctx, candidates, needed)
       const maxDepth = typeof config.maxDepth === 'number' ? config.maxDepth : undefined
+      /* jscpd:ignore-start -- forwards the parallel option fields above into
+         the start request; the fragment tracks this tool's own Config, not
+         dsh-tool-subagent's. */
       const request: SubagentStartRequest = {
         label: args.description,
         prompt: [{ type: 'text', text: args.prompt }] as ContentBlock[],
@@ -142,6 +153,7 @@ export function apply(ctx: Context, config: Config): void {
         ...config.toolFilter !== undefined ? { toolFilter: config.toolFilter } : {},
         ...maxDepth !== undefined ? { maxDepth } : {},
       }
+      /* jscpd:ignore-end */
       const run = await ctx.subagents.start(provider, request)
       return settleForegroundRun(run)
     },
