@@ -90,4 +90,9 @@ describe('plugin-subagent-router resolver', () => {
     expect(() => resolveProvider(ctx, ['minimal'], { persona: true, toolFilter: true, depthLimit: true }))
       .toThrow(/providers \(minimal\) do not support the required capabilities \(persona, toolFilter, depthLimit\)/)
   })
+
+  it('matches nothing when the config carries no routes key at all', () => {
+    expect(matchRouteCandidates({ providers: ['solo'] }, 'any label'))
+      .toBeUndefined()
+  })
 })

@@ -238,6 +238,7 @@ export function apply(ctx: Context, config: Config): void {
         }
       }
       if (primaryError !== undefined) {
+        /* v8 ignore next -- the subprocess seam and the git guards only throw Error instances; the wrap answers the unknown-typed catch. */
         const primary = primaryError instanceof Error ? primaryError : new Error(JSON.stringify(primaryError))
         if (cleanupError !== undefined) {
           throw new AggregateError(
@@ -247,6 +248,7 @@ export function apply(ctx: Context, config: Config): void {
         }
         throw primary
       }
+      /* v8 ignore next 3 -- the try block either sets result or sets primaryError, which threw above. */
       if (result === undefined) {
         throw new Error('sandbox_exec produced no result')
       }

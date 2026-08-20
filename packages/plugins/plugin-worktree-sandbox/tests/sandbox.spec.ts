@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -167,5 +167,164 @@ describe('plugin-worktree-sandbox', () => {
     expect(tooLong.isError).toBe(true)
     expect(text(tooLong)).toContain('invalid sandbox trial id')
     await ctx.fiber.dispose()
+  })
+
+  it('classifies sandbox calls as parallel-safe', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const ctx = await setup({ cwd: repo })
+    expect(ctx.tools.executionMode({
+      name: 'sandbox_exec',
+      arguments: { id: 'p', command: 'true' },
+      callId: CallId('sandbox-mode'),
+      signal: testToolSignal,
+    })).toEqual({ kind: 'parallel' })
+    await ctx.fiber.dispose()
+  })
+})
+
+/** Write an executable fake-git shim delegating to real git except `snippet`'s cases. */
+function fakeGit(repo: string, snippet: string): string {
+  const path = join(repo, 'fake-git.sh')
+  writeFileSync(path, `#!/bin/sh\n${snippet}\nexec git "$@"\n`)
+  chmodSync(path, 0o755)
+  return path
+}
+
+describe('sandbox result rendering', () => {
+  it('renders plural changed files and both output streams', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const ctx = await setup({ cwd: repo })
+    const result = await callSandbox(ctx, {
+      id: 'render',
+      command: 'echo one > f1.txt; echo two > f2.txt; echo out-line; echo err-line >&2',
+    })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('2 files changed: f1.txt, f2.txt')
+    expect(text(result)).toContain('stdout:\nout-line')
+    expect(text(result)).toContain('stderr:\nerr-line')
+    await ctx.fiber.dispose()
+  })
+
+  it('marks every truncated section when the envelope is tiny', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const ctx = await setup({ cwd: repo, maxOutputBytes: 40 })
+    const result = await callSandbox(ctx, {
+      id: 'tiny',
+      command: 'seq 1 200 > big.txt; seq 1 100; seq 100 200 >&2',
+    })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('[diff truncated by the output envelope]')
+    expect(text(result)).toContain('[stdout truncated]')
+    expect(text(result)).toContain('[stderr truncated]')
+    await ctx.fiber.dispose()
+  })
+})
+
+describe('sandbox git failure paths', () => {
+  it('reuses the trial when a concurrent add already created the worktree', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    // The shim performs the real add, then still reports failure — the shape
+    // of losing a same-id race: the error arrives but the worktree exists.
+    const git = fakeGit(repo, 'if [ "$1 $2" = "worktree add" ]; then git "$@" >/dev/null 2>&1; echo "synthetic add race" >&2; exit 1; fi')
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'race', command: 'echo raced > raced.txt' })
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected sandbox success')
+    expect(sandboxValue(result).created).toBe(false)
+    expect(sandboxValue(result).changedFiles).toEqual(['raced.txt'])
+    await ctx.fiber.dispose()
+  })
+
+  it('fails loud when the worktree add fails without creating the worktree', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    // stdout-only failure text exercises the stderr-empty fallback.
+    const git = fakeGit(repo, 'if [ "$1 $2" = "worktree add" ]; then echo "add exploded"; exit 1; fi')
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'no-add', command: 'echo never' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('git worktree add failed: add exploded')
+    await ctx.fiber.dispose()
+  })
+
+  it('surfaces a trial-head resolution failure as the primary error', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const git = fakeGit(repo, 'if [ "$1" = "rev-parse" ] && [ "$2" = "HEAD" ]; then echo "head gone" >&2; exit 1; fi')
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'no-head', command: 'echo probe > probe.txt' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('git rev-parse HEAD failed in trial worktree: head gone')
+    await ctx.fiber.dispose()
+  })
+
+  it('reports a successful trial with a cleanup note when removal fails', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const git = fakeGit(repo, 'if [ "$1 $2" = "worktree remove" ]; then echo "remove blocked" >&2; exit 1; fi')
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'stuck', command: 'echo kept > kept.txt' })
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected sandbox success')
+    expect(sandboxValue(result).cleanupError).toContain('git worktree remove failed: remove blocked')
+    expect(text(result)).toContain('note: the trial worktree could not be removed')
+    await ctx.fiber.dispose()
+  })
+
+  it('aggregates a primary failure with a cleanup failure', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    // Both failures print to stdout only, exercising the stderr-empty fallback
+    // in the trial-head and removal guards.
+    const git = fakeGit(repo, `
+if [ "$1" = "rev-parse" ] && [ "$2" = "HEAD" ]; then echo "head lost"; exit 1; fi
+if [ "$1 $2" = "worktree remove" ]; then echo "remove lost"; exit 1; fi`)
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'double', command: 'echo doomed > doomed.txt' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('sandbox_exec failed: git rev-parse HEAD failed in trial worktree: head lost')
+    expect(text(result)).toContain('cleanup failed: Error: git worktree remove failed: remove lost')
+    await ctx.fiber.dispose()
+  })
+
+  it('falls back to stdout text when a base-ref resolution fails silently on stderr', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const git = fakeGit(repo, 'if [ "$1" = "rev-parse" ] && [ "$2" != "HEAD" ]; then echo "bad ref"; exit 1; fi')
+    const ctx = await setup({ cwd: repo, gitBinary: git })
+    const result = await callSandbox(ctx, { id: 'bad-base', command: 'echo never' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('failed: bad ref')
+    await ctx.fiber.dispose()
+  })
+})
+
+describe('sandbox config fallbacks outside the loader', () => {
+  it('applies documented defaults when apply runs without loader-filled config', async () => {
+    const repo = createGitRepo()
+    repos.push(repo)
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(LocalSubprocessRuntime)
+    // Direct apply bypasses the loader's schema defaults; every `??` fallback
+    // must reproduce them. The repo root falls back to the process cwd.
+    const previousCwd = process.cwd()
+    process.chdir(repo)
+    try {
+      tool.apply(ctx, {})
+      const result = await callSandbox(ctx, { id: 'defaults', command: 'echo d > d.txt' })
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected sandbox success')
+      expect(sandboxValue(result).baseRef).toBe('HEAD')
+      expect(sandboxValue(result).changedFiles).toEqual(['d.txt'])
+    } finally {
+      process.chdir(previousCwd)
+      await ctx.fiber.dispose()
+    }
   })
 })

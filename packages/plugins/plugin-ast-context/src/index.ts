@@ -213,6 +213,8 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (result !== undefined) outlined.push(result)
           else skipped += 1
         } catch (_error: unknown) {
+          /* v8 ignore next -- only an abort landing mid-outline reaches this
+             rethrow; the collector re-checks the signal before every file. */
           if (exec.signal.aborted) exec.signal.throwIfAborted()
           // A file that cannot be read or does not parse is counted and skipped,
           // so one bad file cannot fail the whole directory outline.
