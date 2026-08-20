@@ -1,0 +1,8 @@
+
+ RUN  v4.1.8 /repo/fixture-project
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  12:01:57
+   Duration  433ms (transform 80ms, setup 0ms, import 100ms, tests 9ms, environment 0ms)
