@@ -1,0 +1,32 @@
+
+ RUN  v4.1.8 /repo/fixture-project
+
+ ❯ src/math.test.ts (2 tests | 1 failed) 10ms
+     × fails on purpose 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/math.test.ts > add > fails on purpose
+AssertionError: expected 4 to be 5 // Object.is equality
+
+- Expected
++ Received
+
+- 5
++ 4
+
+ ❯ src/math.test.ts:9:23
+      7|   })
+      8|   it('fails on purpose', () => {
+      9|     expect(add(2, 2)).toBe(5)
+       |                       ^
+     10|   })
+     11| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  12:02:38
+   Duration  393ms (transform 34ms, setup 0ms, import 57ms, tests 10ms, environment 0ms)
