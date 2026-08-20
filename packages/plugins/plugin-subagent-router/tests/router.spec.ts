@@ -151,4 +151,15 @@ describe('plugin-subagent-router', () => {
     await ctx.plugin(SubagentRuntime)
     await expect(ctx.plugin(tool, { providers: [] })).rejects.toThrow(/providers/)
   })
+
+  it('fails loud at load when a route label is empty', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SubagentRuntime)
+    await expect(ctx.plugin(tool, {
+      providers: ['mock'],
+      routes: [{ label: '', providers: ['mock'] }],
+    })).rejects.toThrow(/string length >= 1/)
+  })
 })

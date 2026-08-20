@@ -59,7 +59,7 @@ export interface Config {
 export const Config: z<Config> = z.object({
   providers: z.array(z.string()).min(1).required(),
   routes: z.array(z.object({
-    label: z.string().required(),
+    label: z.string().min(1).required(),
     providers: z.array(z.string()).min(1).required(),
   })).default([]),
   toolName: z.string().default('subagent'),

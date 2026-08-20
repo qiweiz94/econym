@@ -17,7 +17,7 @@ The child's final output is returned to the model as the tool result; a non-`com
 Provider selection is **policy, not model transport vocabulary** — the model never names a provider or transport. The policy is entirely config-owned and deterministic:
 
 - `providers` (required) — the ordered default candidates tried when no route matches.
-- `routes` — label-routed overrides: each entry has a `label` (matched case-insensitively as a substring of the task `description`) and its own ordered `providers` candidates. Every matching route contributes its candidates in config order; a delegation that matches any route never falls back to the default `providers` — routes are policy, and an unroutable delegation fails loud.
+- `routes` — label-routed overrides: each entry has a `label` (matched case-insensitively as a substring of the task `description`) and its own ordered `providers` candidates. Every matching route contributes its candidates in config order; a delegation that matches any route never falls back to the default `providers` — routes are policy, and an unroutable delegation fails loud. A `label` must be non-empty (a blank label would match every delegation and is rejected at load).
 - `persona`, `toolFilter`, `maxDepth` — request options forwarded to the provider; setting one makes the matching provider capability required (fail-loud when the resolved provider lacks it).
 - `agentOptions` — a per-child model/provider override (`provider`, `model`, `maxTokens`).
 

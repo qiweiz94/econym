@@ -61,6 +61,18 @@ describe('plugin-subagent-router resolver', () => {
     expect(matchRouteCandidates(config, 'Summarize the meeting notes')).toEqual(['codex', 'claude', 'opus'])
   })
 
+  it('deduplicates a provider listed by several matching routes', () => {
+    const config: Config = {
+      providers: ['spawn'],
+      routes: [
+        { label: 'summarize', providers: ['codex', 'claude'] },
+        { label: 'meeting', providers: ['codex'] },
+        { label: 'notes', providers: ['opus', 'claude'] },
+      ],
+    }
+    expect(matchRouteCandidates(config, 'Summarize the meeting notes')).toEqual(['codex', 'claude', 'opus'])
+  })
+
   it('resolves the first registered provider that satisfies the needs', () => {
     const ctx = fakeContext({ full: FULL, minimal: MINIMAL })
     expect(resolveProvider(ctx, ['minimal', 'full'], { persona: true, toolFilter: false, depthLimit: false })).toBe('full')
