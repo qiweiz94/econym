@@ -45,14 +45,18 @@ export function satisfiesCapabilities(capabilities: SubagentCapabilities, needed
  * @param label - the delegated task's short description.
  * @returns every matching route's ordered provider candidates, flattened in
  * config order (each route's providers stay ordered, and earlier routes stay
- * ahead of later ones), or undefined when no route matches (the caller falls
- * back to the default candidates).
+ * ahead of later ones) with duplicates removed, or undefined when no route
+ * matches (the caller falls back to the default candidates).
  */
 export function matchRouteCandidates(config: Config, label: string): readonly string[] | undefined {
   const needle = label.toLowerCase()
   const candidates: string[] = []
   for (const route of config.routes ?? []) {
-    if (needle.includes(route.label.toLowerCase())) candidates.push(...route.providers)
+    if (needle.includes(route.label.toLowerCase())) {
+      for (const provider of route.providers) {
+        if (!candidates.includes(provider)) candidates.push(provider)
+      }
+    }
   }
   return candidates.length > 0 ? candidates : undefined
 }
