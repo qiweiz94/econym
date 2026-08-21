@@ -14,6 +14,8 @@ For every **local** child run announced by `subagent/start` (`info.local === tru
 
 All three ceilings are optional, but at least one must be configured — a governor with no ceiling at all is misconfiguration and fails loud at plugin load.
 
+**`mode`** — `enforce` (default) cancels a tripped child run through its `Agent`'s cancellation seam; `observe` leaves the run to continue and only reports the crossed ceiling. Use `observe` to measure how often ceilings would trip before letting the governor intervene. A run reports at most once per turn and is re-armed on its next turn, so a continuable child stays governed across its parent's follow-ups (no shipped composition creates a continuable governed child yet; the re-arm is forward-looking).
+
 ## Config
 
 ```yaml
