@@ -6,6 +6,7 @@ Packages that ship one self-contained model-facing tool on `ctx.tools` without a
 
 | Package | Role | ctx key |
 |---|---|---|
+| [`plugin-arch-guard/`](plugin-arch-guard/README.md) | `check_module_boundary`: judges whether one package importing another is legal under the monorepo layering rules. | (registers on `ctx.tools`) |
 | [`plugin-ast-context/`](plugin-ast-context/README.md) | `get_file_outline` / `get_directory_outline`: tree-sitter symbol outlines of local TypeScript files and directories. | (registers on `ctx.tools`) |
 | [`plugin-diagnostic-sifter/`](plugin-diagnostic-sifter/README.md) | `run_diagnostic_check`: runs typecheck or a scoped test suite and returns a bounded root-cause list with cascade noise suppressed. | (registers on `ctx.tools`) |
 | [`plugin-pinned-scratchpad/`](plugin-pinned-scratchpad/README.md) | `scratchpad_update`: pins key/value facts into a bounded system-prompt block that survives context compaction. | (registers on `ctx.tools`) |

@@ -6,6 +6,7 @@
 
 | 包 | 角色 | ctx key |
 |---|---|---|
+| [`plugin-arch-guard/`](plugin-arch-guard/README.md) | `check_module_boundary`：判断一个包导入另一个包在 monorepo 分层规则下是否合法。 | （注册于 `ctx.tools`） |
 | [`plugin-ast-context/`](plugin-ast-context/README.md) | `get_file_outline` / `get_directory_outline`：本地 TypeScript 文件与目录的 tree-sitter 符号摘要。 | （注册于 `ctx.tools`） |
 | [`plugin-diagnostic-sifter/`](plugin-diagnostic-sifter/README.md) | `run_diagnostic_check`：运行类型检查或范围化测试套件，抑制级联噪音后返回有界的根因列表。 | （注册于 `ctx.tools`） |
 | [`plugin-pinned-scratchpad/`](plugin-pinned-scratchpad/README.md) | `scratchpad_update`：把键值事实钉进有界的系统提示词块，在上下文压缩后仍然存在。 | （注册于 `ctx.tools`） |
