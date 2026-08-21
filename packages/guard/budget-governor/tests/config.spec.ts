@@ -7,8 +7,13 @@ describe('resolveConfig fail-loud validation', () => {
     expect(() => resolveConfig({})).toThrow(/no ceiling is configured/)
   })
 
-  it('accepts a config with exactly one ceiling', () => {
-    expect(resolveConfig({ maxChildTokens: 100 })).toEqual({ maxChildTokens: 100 })
+  it('accepts a config with exactly one ceiling, defaulting mode to enforce', () => {
+    expect(resolveConfig({ maxChildTokens: 100 })).toEqual({ mode: 'enforce', maxChildTokens: 100 })
+  })
+
+  it('carries an explicit observe mode through', () => {
+    expect(resolveConfig({ mode: 'observe', maxChildTokens: 100 }))
+      .toEqual({ mode: 'observe', maxChildTokens: 100 })
   })
 
   it.each([

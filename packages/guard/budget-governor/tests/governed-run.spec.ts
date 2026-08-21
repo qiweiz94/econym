@@ -132,6 +132,30 @@ describe('budget-governor real in-process termination', () => {
     await run.dispose()
   })
 
+  it('observe mode reports a crossed ceiling but does NOT cancel the run', async () => {
+    const { context, parent } = await setup(
+      [
+        toolCallResponse('c1', 'edit', { file_path: 'a.ts', outcome: 'fail' }),
+        toolCallResponse('c2', 'edit', { file_path: 'a.ts', outcome: 'fail' }),
+        textResponse('finished despite the flag'),
+      ],
+      { mode: 'observe', maxConsecutiveToolFailures: 2 },
+    )
+    const run = await start(context, { prompt: [{ type: 'text', text: 'child q' }], parent })
+    const result = await run.result
+    // Observe mode never cancels: the child completes normally.
+    expect(result.stopReason).toBe('completed')
+    expect(text(result.output)).toBe('finished despite the flag')
+    await driveParentForward(parent)
+    const flagged = parent.session.events
+      .filter(e => e.type === 'user/message')
+      .map(e => text(e.data.content))
+      .filter(t => t.includes('crossed a budget-governor ceiling'))
+    expect(flagged).toHaveLength(1)
+    expect(flagged[0]).toContain('observe mode — the run was NOT stopped')
+    await run.dispose()
+  })
+
   it('does NOT terminate a run whose failures clear via an intervening success (real-composition clearing)', async () => {
     const { context, parent } = await setup(
       [
@@ -325,7 +349,7 @@ describe('budget-governor real in-process termination', () => {
     await child.whenIdle()
 
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('but its parent agent is not live; no termination report was delivered'),
+      expect.stringContaining('but its parent agent is not live; no report was delivered'),
     )
   })
 

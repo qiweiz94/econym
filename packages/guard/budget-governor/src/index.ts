@@ -3,12 +3,15 @@
  * It tracks every locally published subagent run announced by
  * `subagent/start`, watches the child session's own events for configured
  * ceilings — cumulative token growth, consecutive tool failures, same-file
- * edit churn — and terminates a tripped run through the child Agent's public
- * cancellation seam (`cancel({ kind: 'hook', … })`). The aborted run settles
- * through the ordinary delegation machinery (an `isError` tool result that
- * preserves partial output), and the governor additionally injects one
- * structured, logged termination report into the parent agent so the parent
- * model learns why the delegation died. The root agent is never governed:
+ * edit churn. In the default `enforce` mode a tripped run is terminated
+ * through the child Agent's public cancellation seam (`cancel({ kind: 'hook',
+ * … })`); the aborted run settles through the ordinary delegation machinery
+ * (an `isError` tool result that preserves partial output). In `observe` mode
+ * the run is left to continue and only reported. In both modes the governor
+ * injects one structured, logged report into the parent agent so the parent
+ * model learns a ceiling was crossed. A run reports at most once per turn and
+ * is re-armed on its next turn, so a continuable child stays governed across
+ * its parent's follow-ups. The root agent is never governed:
  * only sessions announced by the subagent lifecycle events are tracked.
  * Remote runs (`local: false`) expose no local agent or session events and
  * are not governed. Named exports preserve loader injection metadata.
@@ -42,14 +45,21 @@ export const inject = ['subagents', 'agents', 'tokenMeter']
  */
 export interface Config {
   /**
-   * Terminate a child run whose session measures above this many tokens
+   * What a tripped ceiling does. `enforce` (default) cancels the child run;
+   * `observe` only reports and warns, leaving the run to continue — a cautious
+   * deployment that wants the signal without the intervention. Both modes
+   * inject the same model-visible notice into the parent.
+   */
+  mode?: 'enforce' | 'observe'
+  /**
+   * Flag a child run whose session measures above this many tokens
    * (`ctx.tokenMeter.measure` — the model-visible request surface, not
    * provider-billed spend). Integer >= 1.
    */
   maxChildTokens?: number
-  /** Terminate a child run after this many consecutive failed tool calls. Integer >= 1. */
+  /** Flag a child run after this many consecutive failed tool calls. Integer >= 1. */
   maxConsecutiveToolFailures?: number
-  /** Terminate a child run that keeps re-editing one file (see {@link EditChurnConfig}). */
+  /** Flag a child run that keeps re-editing one file (see {@link EditChurnConfig}). */
   editChurn?: EditChurnConfig
 }
 
@@ -58,6 +68,7 @@ export interface Config {
  * fail-loud constraints so a direct caller gets the same rejection.
  */
 export const Config: z<Config> = z.object({
+  mode: z.union([z.const('enforce' as const), z.const('observe' as const)]).default('enforce'),
   maxChildTokens: z.number(),
   maxConsecutiveToolFailures: z.number(),
   // Preserve omission; a materialized `{}` would read as a half-configured ceiling.
@@ -76,6 +87,7 @@ type CeilingKind = 'token ceiling' | 'consecutive tool failures' | 'file edit ch
 
 /** Validated configuration with the edit-tool list folded into a lookup map. */
 interface ResolvedConfig {
+  readonly mode: 'enforce' | 'observe'
   readonly maxChildTokens?: number
   readonly maxConsecutiveToolFailures?: number
   readonly editChurn?: {
@@ -109,10 +121,11 @@ export function resolveConfig(config: Config): ResolvedConfig {
     )
   }
   const resolved: {
+    mode: 'enforce' | 'observe'
     maxChildTokens?: number
     maxConsecutiveToolFailures?: number
     editChurn?: { maxSameFileEdits: number; window: number; tools: ReadonlyMap<string, string> }
-  } = {}
+  } = { mode: config.mode ?? 'enforce' }
   if (config.maxChildTokens !== undefined) {
     resolved.maxChildTokens = requireInteger('maxChildTokens', config.maxChildTokens, 1)
   }
@@ -154,14 +167,36 @@ export function resolveConfig(config: Config): ResolvedConfig {
 interface RunState {
   /** The published local child, resolved during the start notification. */
   readonly child: Agent
-  readonly failures?: ConsecutiveFailureCounter
-  readonly churn?: EditChurnWindow
+  failures?: ConsecutiveFailureCounter
+  churn?: EditChurnWindow
   /** In-flight call id → tool name, kept only for failure-report evidence. */
-  readonly pendingCalls?: Map<CallId, string>
-  /** A tripped run is cancelled once; later events on it are ignored. */
-  terminated: boolean
+  pendingCalls?: Map<CallId, string>
+  /**
+   * Whether a ceiling has already tripped in the CURRENT turn — one report per
+   * turn. Cleared and its per-turn detectors re-armed at the next `turn/start`,
+   * so a continuable child the governor already acted on is governed afresh on
+   * its parent's next follow-up rather than running unwatched.
+   */
+  trippedThisTurn: boolean
   /** Detector-failure warnings are limited to one per run. */
   warned: boolean
+}
+
+/** Build the per-run detectors from config (used at start and at each re-arm). */
+function armRun(run: RunState, resolved: ResolvedConfig): void {
+  run.trippedThisTurn = false
+  if (resolved.maxConsecutiveToolFailures === undefined) {
+    delete run.failures
+    delete run.pendingCalls
+  } else {
+    run.failures = new ConsecutiveFailureCounter(resolved.maxConsecutiveToolFailures)
+    run.pendingCalls = new Map<CallId, string>()
+  }
+  if (resolved.editChurn === undefined) {
+    delete run.churn
+  } else {
+    run.churn = new EditChurnWindow(resolved.editChurn.maxSameFileEdits, resolved.editChurn.window)
+  }
 }
 
 /** Parse the model's raw argument JSON and extract one string-valued path argument. */
@@ -179,14 +214,18 @@ function extractPath(rawArguments: string, pathArgument: string): string | undef
   return typeof value === 'string' ? value : undefined
 }
 
-/** The model-visible termination report injected into the parent agent. */
-function terminationReport(childId: SessionId, reason: string): string {
-  return 'A delegated subagent run was terminated by the budget governor.\n'
-    + `- child: ${childId}\n`
-    + `- ceiling: ${reason}\n`
-    + 'The delegation\'s tool result reports the cancellation and preserves any partial '
-    + 'output produced before termination. Do not repeat the same delegation unchanged; '
-    + 'revise or split the task before delegating again.'
+/** The model-visible report injected into the parent agent when a ceiling trips. */
+function ceilingReport(childId: SessionId, reason: string, mode: 'enforce' | 'observe'): string {
+  const lead = mode === 'enforce'
+    ? 'A delegated subagent run was terminated by the budget governor.'
+    : 'A delegated subagent run crossed a budget-governor ceiling (observe mode — the run was NOT stopped).'
+  const tail = mode === 'enforce'
+    ? 'The delegation\'s tool result reports the cancellation and preserves any partial '
+      + 'output produced before termination. Do not repeat the same delegation unchanged; '
+      + 'revise or split the task before delegating again.'
+    : 'The run continues. Consider whether the delegation is making progress; revise or '
+      + 'split the task if it is not.'
+  return `${lead}\n- child: ${childId}\n- ceiling: ${reason}\n${tail}`
 }
 
 /**
@@ -198,28 +237,48 @@ export function apply(ctx: Context, config: Config): void {
   const resolved = resolveConfig(config)
   const runs = new Map<SessionId, RunState>()
 
-  /** Cancel the tripped child and report the termination to its live parent. */
-  function terminate(run: RunState, session: Session, kind: CeilingKind, reason: string): void {
-    run.terminated = true
-    run.child.cancel({ kind: 'hook', reason: `budget-governor: ${reason}` })
-    ctx.logger.info(`budget-governor: terminated child run ${session.id}: ${reason}`)
+  /**
+   * Record the trip; in `enforce` mode cancel the child; in both modes report
+   * to the live parent. One trip per turn: the flag is cleared at re-arm.
+   */
+  function trip(run: RunState, session: Session, kind: CeilingKind, reason: string): void {
+    run.trippedThisTurn = true
+    const acted = resolved.mode === 'enforce' ? 'terminated' : 'flagged (observe mode)'
+    if (resolved.mode === 'enforce') {
+      run.child.cancel({ kind: 'hook', reason: `budget-governor: ${reason}` })
+    }
+    ctx.logger.info(`budget-governor: ${acted} child run ${session.id}: ${reason}`)
     const parentId = session.header.parentSession
     const parent = parentId === undefined ? undefined : ctx.agents.get(parentId)
     if (parent === undefined) {
       ctx.logger.warn(
-        `budget-governor: child run ${session.id} was terminated (${reason}) `
-        + 'but its parent agent is not live; no termination report was delivered',
+        `budget-governor: child run ${session.id} ${acted} (${reason}) `
+        + 'but its parent agent is not live; no report was delivered',
       )
       return
     }
     parent.inject(createUserMessage({
-      content: [{ type: 'text', text: terminationReport(session.id, reason) }],
-      source: { kind: 'plugin', plugin: name, form: 'notice', summary: `subagent terminated: ${kind}` },
+      content: [{ type: 'text', text: ceilingReport(session.id, reason, resolved.mode) }],
+      source: { kind: 'plugin', plugin: name, form: 'notice', summary: `subagent ${kind}: ${acted}` },
     }))
   }
 
-  /** Feed one child-session event to the run's detectors; trips terminate the run. */
+  /** Feed one child-session event to the run's detectors; a crossed ceiling trips. */
   function observe(run: RunState, session: Session, event: SessionEvent): void {
+    // A new turn re-arms a run the governor already acted on: a continuable
+    // child's parent follow-up is governed fresh, not left unwatched (the token
+    // ceiling, being cumulative, re-trips at once if the run is still over).
+    if (event.type === 'turn/start') {
+      /* v8 ignore next -- re-arm fires only for a continuable governed child's
+         post-trip turn; no shipped composition creates a continuable child yet
+         (fork binds one-shot, see the fork-continuable-prefix-reuse TODO), so
+         the true branch is forward-looking. Wire a continuable-child test when
+         such a composition ships. */
+      if (run.trippedThisTurn) armRun(run, resolved)
+      return
+    }
+    // One report per turn; further events wait for the next re-arm.
+    if (run.trippedThisTurn) return
     switch (event.type) {
       case 'tool/call': {
         run.pendingCalls?.set(event.data.callId, event.data.name)
@@ -229,7 +288,7 @@ export function apply(ctx: Context, config: Config): void {
         if (pathArgument === undefined) return
         const path = extractPath(event.data.arguments, pathArgument)
         if (path !== undefined && run.churn.observe(path)) {
-          terminate(run, session, 'file edit churn',
+          trip(run, session, 'file edit churn',
             `${run.churn.current} edits to ${path} within the last ${churnConfig.window} `
             + `edit-tool calls (ceiling ${churnConfig.maxSameFileEdits})`)
         }
@@ -242,7 +301,7 @@ export function apply(ctx: Context, config: Config): void {
         const ceiling = resolved.maxConsecutiveToolFailures
         if (run.failures === undefined || ceiling === undefined) return
         if (run.failures.observe(block.isError === true)) {
-          terminate(run, session, 'consecutive tool failures',
+          trip(run, session, 'consecutive tool failures',
             `${run.failures.current} consecutive tool failures (ceiling ${ceiling})`
             + (toolName === undefined ? '' : `; last failing tool: ${toolName}`))
         }
@@ -252,7 +311,7 @@ export function apply(ctx: Context, config: Config): void {
         if (resolved.maxChildTokens === undefined) return
         const total = ctx.tokenMeter.measure(session).totalTokens
         if (total > resolved.maxChildTokens) {
-          terminate(run, session, 'token ceiling',
+          trip(run, session, 'token ceiling',
             `context grew to ~${total} tokens (ceiling ${resolved.maxChildTokens})`)
         }
         return
@@ -274,20 +333,9 @@ export function apply(ctx: Context, config: Config): void {
       ctx.logger.warn(`budget-governor: local child run ${info.id} has no live agent; the run is not governed`)
       return
     }
-    runs.set(info.id, {
-      child,
-      ...resolved.maxConsecutiveToolFailures === undefined
-        ? {}
-        : {
-          failures: new ConsecutiveFailureCounter(resolved.maxConsecutiveToolFailures),
-          pendingCalls: new Map<CallId, string>(),
-        },
-      ...resolved.editChurn === undefined
-        ? {}
-        : { churn: new EditChurnWindow(resolved.editChurn.maxSameFileEdits, resolved.editChurn.window) },
-      terminated: false,
-      warned: false,
-    })
+    const run: RunState = { child, trippedThisTurn: false, warned: false }
+    armRun(run, resolved)
+    runs.set(info.id, run)
   })
 
   ctx.on('subagent/end', (info) => {
@@ -296,7 +344,9 @@ export function apply(ctx: Context, config: Config): void {
 
   ctx.on('session/event', (session, event) => {
     const run = runs.get(session.id)
-    if (run === undefined || run.terminated) return
+    // A tripped run is NOT skipped here: `observe` still sees its `turn/start`
+    // to re-arm, so a continuable child stays governed across follow-ups.
+    if (run === undefined) return
     try {
       observe(run, session, event)
     } catch (error: unknown) {
