@@ -192,6 +192,9 @@ export function apply(ctx: Context, config: Config): void {
       if (key.includes('\n') || key.includes('\r')) {
         throw new Error(`invalid scratchpad key ${JSON.stringify(key)}: must be a single line`)
       }
+      if (key.includes(OPEN_TAG) || key.includes(CLOSE_TAG)) {
+        throw new Error(`invalid scratchpad key ${JSON.stringify(key)}: must not contain the ${OPEN_TAG}/${CLOSE_TAG} frame markers`)
+      }
       const session = exec.agent.session
       const current = foldScratchpad(session.events)
       let action: 'set' | 'delete'
@@ -208,6 +211,12 @@ export function apply(ctx: Context, config: Config): void {
         const value = args.value.trim()
         if (value.length === 0) {
           throw new Error(`invalid scratchpad value for ${JSON.stringify(key)}: must be non-empty (pass null to delete the entry)`)
+        }
+        // A value carrying the frame markers would close the rendered block
+        // early and inject text outside the delimiters, reading as
+        // operator-authored system-prompt content; refuse it at write time.
+        if (value.includes(OPEN_TAG) || value.includes(CLOSE_TAG)) {
+          throw new Error(`invalid scratchpad value for ${JSON.stringify(key)}: must not contain the ${OPEN_TAG}/${CLOSE_TAG} frame markers`)
         }
         next = current.some(entry => entry.key === key)
           ? current.map(entry => entry.key === key ? { key, value } : entry)
