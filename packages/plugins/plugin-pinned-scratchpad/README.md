@@ -8,7 +8,7 @@ The model-facing `scratchpad_update` tool: a per-session key/value store the age
 
 Registers one tool on `ctx.tools` and one section on `ctx.systemPrompt`:
 
-- `scratchpad_update(key, value)` upserts or deletes one entry in the calling agent's scratchpad. A string `value` adds a new key or replaces an existing one; `null` deletes an existing key and fails loud if the key is not present. `key` and `value` are trimmed and must be non-empty; `key` must be single-line. The tool requires an owning agent session — a caller with no `agent` (no session to own the store) is rejected rather than silently no-op.
+- `scratchpad_update(key, value)` upserts or deletes one entry in the calling agent's scratchpad. A string `value` adds a new key or replaces an existing one; `null` deletes an existing key and fails loud if the key is not present. `key` and `value` are trimmed and must be non-empty; `key` must be single-line; neither may contain the literal `<agent_scratchpad>` / `</agent_scratchpad>` frame markers, so a stored value can never close the rendered block early and smuggle text outside the delimiters. The tool requires an owning agent session — a caller with no `agent` (no session to own the store) is rejected rather than silently no-op.
 - The `scratchpad:pinned` prompt section renders the calling agent's current entries as `key: value` lines between `<agent_scratchpad>`/`</agent_scratchpad>`, in insertion order, or contributes nothing (`''`) for an empty store or an agent-less assembly.
 
 ## Durability model

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-pinned-scratchpad/README.md
-README.md: c45a6dc915ba3fc393923c97f054a977e94fc6ba
-README.zh.md: 02b5eed910f10d807d1823d76f2f3e037fcc66b3
+README.md: 24ed2f7d390be45eb0d4af6195d73d8531a761ad
+README.zh.md: 85b43e1984152119f24f5b21c29bdc9c8a6e484d
