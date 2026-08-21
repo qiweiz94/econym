@@ -17,7 +17,7 @@
  * link targets, in order) is `scripts/translation-pairing.ts`'s
  * `translationStructureDiff`, built on an `mdast`/`gfm` parse. Depending on
  * that parser here would add dependencies outside this package's declared
- * workspace-trio budget (`dsh-invariants` / `dsh-tools` / `cordis`), so this
+ * workspace-trio budget (`dsh-invariants` / `dsh-tools` / `@deepseek-ai/cordis`), so this
  * module re-derives only the heading axis — the axis a section splice can
  * disturb — from plain-text ATX heading scanning, as a self-test of the
  * splice. It is not a substitute for the full corpus gate; callers still run
