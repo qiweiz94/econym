@@ -126,6 +126,40 @@ describe('siftTypecheck: synthetic boundary branches', () => {
     expect(report.suppressedCascadeCount).toBe(2)
   })
 
+  it('collapses every echo of a genuinely missing module (no file of its own to retain a diagnostic) down to its first occurrence as the one root cause (bug #64)', () => {
+    const missingCascade = [
+      'src/a.ts(1,1): error TS2307: Cannot find module \'./ghost\' or its corresponding type declarations.',
+      'src/b.ts(2,3): error TS2307: Cannot find module \'./ghost\' or its corresponding type declarations.',
+      'src/c.ts(3,4): error TS2307: Cannot find module \'./ghost\' or its corresponding type declarations.',
+    ].join('\n')
+    const report = siftTypecheck(missingCascade)
+    expect(report.rootCauses).toEqual<DiagnosticRootCause[]>([
+      {
+        file: 'src/a.ts',
+        line: 1,
+        code: 'TS2307',
+        message: "Cannot find module './ghost' or its corresponding type declarations.",
+      },
+    ])
+    expect(report.suppressedCascadeCount).toBe(2)
+    expect(report.deduplicatedCount).toBe(0)
+  })
+
+  it('keeps a single genuinely-missing-module TS2307 as one root cause, never suppressing it to zero (known-healthy)', () => {
+    const singleMissing =
+      'src/only.ts(5,6): error TS2307: Cannot find module \'./ghost\' or its corresponding type declarations.\n'
+    const report = siftTypecheck(singleMissing)
+    expect(report.rootCauses).toEqual<DiagnosticRootCause[]>([
+      {
+        file: 'src/only.ts',
+        line: 5,
+        code: 'TS2307',
+        message: "Cannot find module './ghost' or its corresponding type declarations.",
+      },
+    ])
+    expect(report.suppressedCascadeCount).toBe(0)
+  })
+
   it('keeps a TS2307/TS2724 diagnostic whose message names no recognizable module specifier', () => {
     const unparseable = 'src/root.ts(1,1): error TS2322: broke.\nsrc/a.ts(1,1): error TS2307: something odd happened.\n'
     const report = siftTypecheck(unparseable)
