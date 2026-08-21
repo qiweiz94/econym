@@ -192,7 +192,7 @@ describe('plugin-diagnostic-sifter', () => {
     await ctx.fiber.dispose()
   }, 30_000)
 
-  it('rejects an empty or option-injecting targetPath before spawning', async () => {
+  it('rejects an empty, option-injecting, or escaping targetPath before spawning', async () => {
     const root = fixture()
     const ctx = await setup({ cwd: root })
     const empty = await callCheck(ctx, { command: 'typecheck', targetPath: '' })
@@ -201,6 +201,14 @@ describe('plugin-diagnostic-sifter', () => {
     const injected = await callCheck(ctx, { command: 'typecheck', targetPath: '--outDir=/tmp/evil' })
     expect(injected.isError).toBe(true)
     expect(text(injected)).toContain('invalid targetPath')
+    // A relative escape would make vitest/tsc load a foreign config outside cwd.
+    const escape = await callCheck(ctx, { command: 'test', targetPath: '../../etc' })
+    expect(escape.isError).toBe(true)
+    expect(text(escape)).toContain('must stay within the working directory')
+    // An absolute path outside cwd is the same escape by another route.
+    const absolute = await callCheck(ctx, { command: 'typecheck', targetPath: '/etc/passwd' })
+    expect(absolute.isError).toBe(true)
+    expect(text(absolute)).toContain('must stay within the working directory')
     await ctx.fiber.dispose()
   })
 
