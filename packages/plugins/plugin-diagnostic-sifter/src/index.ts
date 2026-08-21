@@ -10,6 +10,7 @@
  * @module @deepseek-ai/dsh-plugin-diagnostic-sifter
  */
 
+import { isAbsolute, relative, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, GenericResultView, ToolResult } from '@deepseek-ai/dsh-tools'
@@ -113,6 +114,35 @@ function asDiagnosticMeta(meta: unknown): DiagnosticMeta | undefined {
 }
 
 /**
+ * Validate and contain the model-supplied `targetPath` before it becomes a
+ * spawned argv. A check runs the TARGET's own vitest/tsc config, so a path that
+ * escapes `cwd` — `../..`, or an absolute path elsewhere — would load and
+ * execute a foreign config; a leading dash would inject an option. Both are
+ * rejected before spawn.
+ * @param raw - the model-supplied path, or `undefined` when omitted.
+ * @param cwd - the working directory the check runs in and the path is contained to.
+ * @returns the cwd-relative path to pass as an argv (`.` for the cwd itself), or `undefined` when omitted.
+ * @throws Error when the path is empty, option-injecting, or escapes `cwd`.
+ */
+function containTargetPath(raw: string | undefined, cwd: string): string | undefined {
+  if (raw === undefined) return undefined
+  // The path lands in a spawned argv; the tool JSON validator cannot express
+  // "no leading dash", so reject option injection outright.
+  if (raw.length === 0 || raw.startsWith('-')) {
+    throw new Error(`invalid targetPath ${JSON.stringify(raw)}: must be a non-empty path and must not start with '-'`)
+  }
+  const rel = relative(cwd, resolve(cwd, raw))
+  if (rel.startsWith('..')) {
+    throw new Error(`invalid targetPath ${JSON.stringify(raw)}: must stay within the working directory`)
+  }
+  /* v8 ignore next 3 -- a non-'..' absolute rel means a different Windows drive; posix relative() never returns one */
+  if (isAbsolute(rel)) {
+    throw new Error(`invalid targetPath ${JSON.stringify(raw)}: must stay within the working directory`)
+  }
+  return rel === '' ? '.' : rel
+}
+
+/**
  * Register the diagnostic tool.
  * @param ctx - Cordis context carrying the tool registry and subprocess service.
  * @param config - diagnostic configuration.
@@ -136,7 +166,7 @@ export function apply(ctx: Context, config: Config): void {
       },
       targetPath: {
         type: 'string',
-        description: 'Optional path scoping the check, relative to the configured working directory: a tsc project/directory for `typecheck`, a test file or directory for `test`. Omit to check everything.',
+        description: 'Optional path scoping the check, relative to the configured working directory and contained within it: a tsc project/directory for `typecheck`, a test file or directory for `test`. Omit to check everything.',
       },
     },
     output: {
@@ -185,13 +215,8 @@ export function apply(ctx: Context, config: Config): void {
     },
     async execute(args, exec) {
       const command: DiagnosticCommand = args.command
-      const targetPath = args.targetPath
-      // The path lands in a spawned argv; the tool JSON validator cannot
-      // express "no leading dash", so reject option injection outright.
-      if (targetPath !== undefined && (targetPath.length === 0 || targetPath.startsWith('-'))) {
-        throw new Error(`invalid targetPath ${JSON.stringify(targetPath)}: must be a non-empty path and must not start with '-'`)
-      }
       const cwd = config.cwd ?? process.cwd()
+      const targetPath = containTargetPath(args.targetPath, cwd)
       const envelope = config.maxOutputBytes ?? 15_000
       const argv = command === 'typecheck'
         ? [...tscArgs, ...targetPath === undefined ? [] : [targetPath]]
