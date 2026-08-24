@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "publish:all": "pnpm run build && pnpm -r publish --access public --tag next",
-    "test:consumer-smoke": "node scripts/consumer-smoke.mjs"
+    "test:consumer-smoke": "node scripts/consumer-smoke.mjs",
+    "version": "node scripts/version.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
