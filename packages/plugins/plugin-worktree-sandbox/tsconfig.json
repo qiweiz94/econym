@@ -6,7 +6,8 @@
     "noEmit": false,
     "composite": false,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "tsBuildInfoFile": "../tsconfig.tsbuildinfo"
   },
   "include": [
     "src"
