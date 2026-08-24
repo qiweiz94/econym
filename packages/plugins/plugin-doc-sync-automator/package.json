@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-doc-sync-automator",
   "description": "sync_bilingual_pair tool: splice a changed section of an English doc into its .zh.md mirror behind a NEEDS-TRANSLATION marker, keeping the bilingual pair structurally valid without machine translation",
-  "version": "0.1.0-rc.5",
+  "version": "0.1.0-rc.6",
   "publishConfig": {
     "access": "public"
   },

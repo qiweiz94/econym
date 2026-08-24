@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-semantic-patcher",
   "description": "patch_symbol_body tool: replace one named TypeScript symbol's body in place, located by tree-sitter",
-  "version": "0.1.0-rc.5",
+  "version": "0.1.0-rc.6",
   "publishConfig": {
     "access": "public"
   },

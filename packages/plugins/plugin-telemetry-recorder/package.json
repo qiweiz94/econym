@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-telemetry-recorder",
   "description": "get_session_telemetry tool: rolling token velocity, prompt-cache ratio, context headroom, turn latency, and subagent counts",
-  "version": "0.1.0-rc.5",
+  "version": "0.1.0-rc.6",
   "publishConfig": {
     "access": "public"
   },
