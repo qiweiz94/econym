@@ -42,6 +42,7 @@ pnpm install
 pnpm run build        # tsc emit lib/ for all 11 packages
 pnpm run typecheck
 pnpm test             # 486 tests, all keyless
+pnpm test:consumer-smoke  # boot a plugin against PUBLISHED @deepseek-ai deps in a clean temp project
 pnpm publish:all      # build + publish every package under the next tag
 ```
 
