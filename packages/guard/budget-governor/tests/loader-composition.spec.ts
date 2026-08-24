@@ -65,7 +65,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-subagent', SubagentRuntime],
     ['@deepseek-ai/dsh-subagent-fork-in-process', ForkProvider],
     ['@deepseek-ai/dsh-token-meter', TokenMeter],
-    ['@deepseek-ai/dsh-budget-governor', PluginGovernor],
+    ['@econym/dsh-budget-governor', PluginGovernor],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -94,13 +94,13 @@ describe('budget-governor real Loader composition through cordis.yml', () => {
 
   it('fails loud at load when no ceiling is configured', async () => {
     await expect(boot(
-      "- name: '@deepseek-ai/dsh-budget-governor'\n  config: {}",
+      "- name: '@econym/dsh-budget-governor'\n  config: {}",
     )).rejects.toThrow(/no ceiling is configured/)
   }, 30_000)
 
   it('terminates a governed child run through the fully Loader-composed real backend', async () => {
     const ctx = await boot(
-      "- name: '@deepseek-ai/dsh-budget-governor'\n  config:\n    maxConsecutiveToolFailures: 1",
+      "- name: '@econym/dsh-budget-governor'\n  config:\n    maxConsecutiveToolFailures: 1",
     )
     ctx.tools.register(defineContentToolFixture({
       name: 'edit',

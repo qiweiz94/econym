@@ -9,7 +9,7 @@
  * candidates: routes are policy, and an unroutable delegation fails loud.
  * Provider selection is policy, not model transport vocabulary. Named
  * exports preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-subagent-router
+ * @module @econym/dsh-plugin-subagent-router
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -17,7 +17,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import { outputValueText, settleForegroundRun } from '@deepseek-ai/dsh-subagent'
+import { outputValueText, settleForegroundRun } from './foreground-settlement.ts'
 import type { SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import { matchRouteAgentOptions, matchRouteCandidates, neededCapabilities, resolveProvider } from './resolver.ts'
 

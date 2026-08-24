@@ -9,7 +9,7 @@
  * State is folded from the session log alone — resume and fork restore it with
  * no live mirror. A non-agent caller has no owning session and is rejected.
  * Named exports preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-pinned-scratchpad
+ * @module @econym/dsh-plugin-pinned-scratchpad
  */
 
 import { Buffer } from 'node:buffer'

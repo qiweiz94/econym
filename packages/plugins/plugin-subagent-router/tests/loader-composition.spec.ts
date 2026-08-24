@@ -17,7 +17,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import * as PluginRouter from '@deepseek-ai/dsh-plugin-subagent-router'
+import * as PluginRouter from '@econym/dsh-plugin-subagent-router'
 import { mountScriptedProvider } from './scripted-provider.ts'
 
 let root: string | undefined
@@ -56,7 +56,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-subagent', SubagentRuntime],
-    ['@deepseek-ai/dsh-plugin-subagent-router', PluginRouter],
+    ['@econym/dsh-plugin-subagent-router', PluginRouter],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -76,7 +76,7 @@ function text(result: { content: { type: string; text?: string }[] }): string {
 
 describe('plugin-subagent-router real Loader composition through cordis.yml', () => {
   it('exposes the subagent tool and routes a delegation to a registered provider', async () => {
-    const ctx = await boot("- name: '@deepseek-ai/dsh-plugin-subagent-router'\n  config:\n    providers: [mock]")
+    const ctx = await boot("- name: '@econym/dsh-plugin-subagent-router'\n  config:\n    providers: [mock]")
     mountScriptedProvider(ctx, { name: 'mock', reply: 'composed child reply' })
 
     const schema = ctx.tools.schemas().find(s => s.name === 'subagent')
@@ -95,7 +95,7 @@ describe('plugin-subagent-router real Loader composition through cordis.yml', ()
 
   it('fails loud at load when providers is empty', async () => {
     await expect(boot(
-      "- name: '@deepseek-ai/dsh-plugin-subagent-router'\n  config:\n    providers: []",
+      "- name: '@econym/dsh-plugin-subagent-router'\n  config:\n    providers: []",
     )).rejects.toThrow(/providers/)
   }, 30_000)
 })

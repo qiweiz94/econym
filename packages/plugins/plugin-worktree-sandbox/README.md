@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-worktree-sandbox
+# @econym/dsh-plugin-worktree-sandbox
 
 English | [中文](README.zh.md)
 

@@ -17,7 +17,7 @@ import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PinnedScratchpad from '@deepseek-ai/dsh-plugin-pinned-scratchpad'
+import * as PinnedScratchpad from '@econym/dsh-plugin-pinned-scratchpad'
 
 let root: string | undefined
 let context: Context | undefined
@@ -60,7 +60,7 @@ async function boot(configLines: readonly string[]): Promise<Context> {
     "- name: '@deepseek-ai/dsh-agent'",
     "- name: '@deepseek-ai/dsh-system-prompt'",
     "- name: '@deepseek-ai/dsh-tools'",
-    "- name: '@deepseek-ai/dsh-plugin-pinned-scratchpad'",
+    "- name: '@econym/dsh-plugin-pinned-scratchpad'",
     ...configLines.length > 0 ? ['  config:', ...configLines] : [],
     '',
   ].join('\n'))
@@ -74,7 +74,7 @@ async function boot(configLines: readonly string[]): Promise<Context> {
     ['@deepseek-ai/dsh-agent', AgentRegistry],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@deepseek-ai/dsh-plugin-pinned-scratchpad', PinnedScratchpad],
+    ['@econym/dsh-plugin-pinned-scratchpad', PinnedScratchpad],
   ])
   ctx.loader.internal = {
     version: 'v2',

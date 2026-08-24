@@ -1,7 +1,7 @@
 /**
  * Types shared by the module-boundary guard and its workspace-index builder.
  * This module contains only types; the pure boundary logic lives in guard.ts.
- * @module @deepseek-ai/dsh-plugin-arch-guard/types
+ * @module @econym/dsh-plugin-arch-guard/types
  */
 
 /**

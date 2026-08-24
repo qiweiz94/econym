@@ -4,7 +4,7 @@
  * plugins-do-not-import-each-other-undeclared rule, package-graph
  * acyclicity, and the target package's `exports` map — before it is written.
  * Named exports preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-arch-guard
+ * @module @econym/dsh-plugin-arch-guard
  */
 
 import type { Context } from '@deepseek-ai/cordis'

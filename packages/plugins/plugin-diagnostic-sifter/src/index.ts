@@ -7,7 +7,7 @@
  * reported as a parse failure carrying the bounded raw output, so absence of
  * parsed diagnostics never reads as a clean run. Named exports preserve loader
  * injection metadata.
- * @module @deepseek-ai/dsh-plugin-diagnostic-sifter
+ * @module @econym/dsh-plugin-diagnostic-sifter
  */
 
 import { isAbsolute, relative, resolve } from 'node:path'

@@ -6,7 +6,7 @@
  * removed after the call by default, so a trial's changes are disposable until
  * the caller decides to apply them. Named exports preserve loader injection
  * metadata.
- * @module @deepseek-ai/dsh-plugin-worktree-sandbox
+ * @module @econym/dsh-plugin-worktree-sandbox
  */
 
 import { randomUUID } from 'node:crypto'

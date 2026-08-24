@@ -13,7 +13,7 @@ import { CallId } from '@deepseek-ai/dsh-llm'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PluginAstContext from '@deepseek-ai/dsh-plugin-ast-context'
+import * as PluginAstContext from '@econym/dsh-plugin-ast-context'
 
 let root: string | undefined
 let context: Context | undefined
@@ -25,7 +25,7 @@ afterEach(async () => {
   root = undefined
 })
 
-async function boot(source: string, pluginEntry: string = "- name: '@deepseek-ai/dsh-plugin-ast-context'"): Promise<{ ctx: Context; path: string }> {
+async function boot(source: string, pluginEntry: string = "- name: '@econym/dsh-plugin-ast-context'"): Promise<{ ctx: Context; path: string }> {
   root = await mkdtemp(join(tmpdir(), 'dsh-ast-context-loader-'))
   const path = join(root, 'sample.ts')
   await writeFile(path, source)
@@ -47,7 +47,7 @@ async function boot(source: string, pluginEntry: string = "- name: '@deepseek-ai
     ['@deepseek-ai/dsh-agent', AgentRegistry],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@deepseek-ai/dsh-plugin-ast-context', PluginAstContext],
+    ['@econym/dsh-plugin-ast-context', PluginAstContext],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -86,7 +86,7 @@ describe('plugin-ast-context real Loader composition through cordis.yml', () => 
   it('fails loud at load when maxSymbols is not a positive integer', async () => {
     await expect(boot(
       'export function a() {}\n',
-      "- name: '@deepseek-ai/dsh-plugin-ast-context'\n  config:\n    maxSymbols: 0",
+      "- name: '@econym/dsh-plugin-ast-context'\n  config:\n    maxSymbols: 0",
     )).rejects.toThrow(/maxSymbols/)
   }, 30_000)
 })

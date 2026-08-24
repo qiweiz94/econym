@@ -37,7 +37,7 @@
  *   only within one package; a relative specifier that resolves outside the
  *   source package's own directory is the escape this rule catches.
  *
- * @module @deepseek-ai/dsh-plugin-arch-guard/guard
+ * @module @econym/dsh-plugin-arch-guard/guard
  */
 
 import type { CheckModuleBoundaryInput, CheckModuleBoundaryResult, PackageTier, WorkspaceIndex, WorkspacePackage } from './types.ts'

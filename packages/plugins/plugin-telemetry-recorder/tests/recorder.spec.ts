@@ -16,8 +16,8 @@ import { SubagentRunId } from '@deepseek-ai/dsh-subagent'
 import type SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as TelemetryPlugin from '@deepseek-ai/dsh-plugin-telemetry-recorder'
-import type { Config, TelemetrySnapshot } from '@deepseek-ai/dsh-plugin-telemetry-recorder'
+import * as TelemetryPlugin from '@econym/dsh-plugin-telemetry-recorder'
+import type { Config, TelemetrySnapshot } from '@econym/dsh-plugin-telemetry-recorder'
 
 let context: Context | undefined
 let clock = 1_000_000

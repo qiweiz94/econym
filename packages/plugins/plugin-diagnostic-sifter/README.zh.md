@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-diagnostic-sifter
+# @econym/dsh-plugin-diagnostic-sifter
 
 [English](README.md) | 中文
 

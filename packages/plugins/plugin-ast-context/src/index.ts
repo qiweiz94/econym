@@ -3,7 +3,7 @@
  * files and report their declared symbols with 1-based line spans, so the
  * model can orient before reading large files or trees. Named exports
  * preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-ast-context
+ * @module @econym/dsh-plugin-ast-context
  */
 
 import { readFile, stat } from 'node:fs/promises'

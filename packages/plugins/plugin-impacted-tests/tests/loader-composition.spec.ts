@@ -17,7 +17,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as PluginImpactedTests from '@deepseek-ai/dsh-plugin-impacted-tests'
+import * as PluginImpactedTests from '@econym/dsh-plugin-impacted-tests'
 import type { ImpactedTestsResult } from '../src/types.ts'
 import { createWorkspace, removeWorkspace } from './workspace-fixture.ts'
 
@@ -60,7 +60,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
-    ['@deepseek-ai/dsh-plugin-impacted-tests', PluginImpactedTests],
+    ['@econym/dsh-plugin-impacted-tests', PluginImpactedTests],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -77,7 +77,7 @@ async function boot(pluginEntry: string): Promise<Context> {
 /** The cordis.yml entry mounting the plugin over a fixture workspace. */
 function entryFor(workspace: string, extra: readonly string[] = []): string {
   return [
-    "- name: '@deepseek-ai/dsh-plugin-impacted-tests'",
+    "- name: '@econym/dsh-plugin-impacted-tests'",
     '  config:',
     `    cwd: ${workspace}`,
     '    tsconfigPath: tsconfig.json',

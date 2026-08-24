@@ -7,7 +7,7 @@
  * produced the evidence it needs, so a reader can tell "no data" from "a
  * measured zero".
  *
- * @module @deepseek-ai/dsh-plugin-telemetry-recorder/types
+ * @module @econym/dsh-plugin-telemetry-recorder/types
  */
 
 /** Provider-reported token buckets accumulated over a set of turns; the four are disjoint. */

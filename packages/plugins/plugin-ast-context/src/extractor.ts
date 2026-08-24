@@ -2,7 +2,7 @@
  * Tree-sitter backed symbol outline extraction for TypeScript sources.
  * The extractor is a pure function of file text: it owns no state beyond the
  * parser instance and never touches the filesystem.
- * @module @deepseek-ai/dsh-plugin-ast-context/extractor
+ * @module @econym/dsh-plugin-ast-context/extractor
  */
 
 import Parser from 'tree-sitter'

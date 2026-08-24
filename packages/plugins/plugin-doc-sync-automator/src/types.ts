@@ -1,6 +1,6 @@
 /**
- * Type-only declarations for `@deepseek-ai/dsh-plugin-doc-sync-automator`.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator/types
+ * Type-only declarations for `@econym/dsh-plugin-doc-sync-automator`.
+ * @module @econym/dsh-plugin-doc-sync-automator/types
  */
 
 /** Identifies which section of an English document changed. */

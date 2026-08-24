@@ -9,7 +9,7 @@
  * `scripts/doc-budgets.manifest.json`'s ceilings (`budgets.ts`). This module
  * does no translation — it keeps the pair mechanically valid and marks the
  * debt for a human translator.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator/syncer
+ * @module @econym/dsh-plugin-doc-sync-automator/syncer
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'

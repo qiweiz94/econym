@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-budget-governor
+# @econym/dsh-budget-governor
 
 [English](README.md) | 中文
 
@@ -19,7 +19,7 @@
 ## 配置
 
 ```yaml
-- name: '@deepseek-ai/dsh-budget-governor'
+- name: '@econym/dsh-budget-governor'
   config:
     maxChildTokens: 200000
     maxConsecutiveToolFailures: 5

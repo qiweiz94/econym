@@ -14,7 +14,7 @@ import { CallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as PluginSifter from '@deepseek-ai/dsh-plugin-diagnostic-sifter'
+import * as PluginSifter from '@econym/dsh-plugin-diagnostic-sifter'
 import type { DiagnosticCheckResult } from '../src/types.ts'
 import { createFixtureProject, removeFixtureProject } from './fixture-project.ts'
 
@@ -56,7 +56,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
-    ['@deepseek-ai/dsh-plugin-diagnostic-sifter', PluginSifter],
+    ['@econym/dsh-plugin-diagnostic-sifter', PluginSifter],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -78,7 +78,7 @@ describe('plugin-diagnostic-sifter real Loader composition through cordis.yml', 
   it('runs a typecheck through the composed tool and returns the structured result', async () => {
     const project = createFixtureProject({ 'src/ok.ts': 'export const ok = 1\n' })
     projects.push(project)
-    const ctx = await boot(`- name: '@deepseek-ai/dsh-plugin-diagnostic-sifter'\n  config:\n    cwd: ${project}`)
+    const ctx = await boot(`- name: '@econym/dsh-plugin-diagnostic-sifter'\n  config:\n    cwd: ${project}`)
 
     const schema = ctx.tools.schemas().find(s => s.name === 'run_diagnostic_check')
     expect(schema).toBeDefined()
@@ -100,7 +100,7 @@ describe('plugin-diagnostic-sifter real Loader composition through cordis.yml', 
     const project = createFixtureProject()
     projects.push(project)
     await expect(boot(
-      `- name: '@deepseek-ai/dsh-plugin-diagnostic-sifter'\n  config:\n    cwd: ${project}\n    maxOutputBytes: 0`,
+      `- name: '@econym/dsh-plugin-diagnostic-sifter'\n  config:\n    cwd: ${project}\n    maxOutputBytes: 0`,
     )).rejects.toThrow(/maxOutputBytes/)
   }, 30_000)
 })

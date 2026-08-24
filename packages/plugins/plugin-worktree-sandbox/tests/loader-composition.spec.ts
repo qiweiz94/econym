@@ -14,7 +14,7 @@ import { CallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as PluginSandbox from '@deepseek-ai/dsh-plugin-worktree-sandbox'
+import * as PluginSandbox from '@econym/dsh-plugin-worktree-sandbox'
 import type { SandboxExecResult } from '../src/types.ts'
 import { createGitRepo, removeRepo } from './git-fixture.ts'
 
@@ -56,7 +56,7 @@ async function boot(repoCwd: string, pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
-    ['@deepseek-ai/dsh-plugin-worktree-sandbox', PluginSandbox],
+    ['@econym/dsh-plugin-worktree-sandbox', PluginSandbox],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -79,7 +79,7 @@ describe('plugin-worktree-sandbox real Loader composition through cordis.yml', (
   it('runs an isolated trial and returns the structured diff', async () => {
     const repo = createGitRepo()
     repos.push(repo)
-    const ctx = await boot(repo, `- name: '@deepseek-ai/dsh-plugin-worktree-sandbox'\n  config:\n    cwd: ${repo}`)
+    const ctx = await boot(repo, `- name: '@econym/dsh-plugin-worktree-sandbox'\n  config:\n    cwd: ${repo}`)
 
     const schema = ctx.tools.schemas().find(s => s.name === 'sandbox_exec')
     expect(schema).toBeDefined()
@@ -103,7 +103,7 @@ describe('plugin-worktree-sandbox real Loader composition through cordis.yml', (
     repos.push(repo)
     await expect(boot(
       repo,
-      `- name: '@deepseek-ai/dsh-plugin-worktree-sandbox'\n  config:\n    cwd: ${repo}\n    maxOutputBytes: 0`,
+      `- name: '@econym/dsh-plugin-worktree-sandbox'\n  config:\n    cwd: ${repo}\n    maxOutputBytes: 0`,
     )).rejects.toThrow(/maxOutputBytes/)
   }, 30_000)
 })

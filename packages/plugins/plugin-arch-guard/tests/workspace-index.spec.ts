@@ -29,7 +29,7 @@ describe('buildWorkspaceIndex', () => {
       devDependencies: { '@deepseek-ai/dsh-other': '^1.0.0' },
     })
     await writeManifest('packages/plugins/plugin-fake', {
-      name: '@deepseek-ai/dsh-plugin-fake',
+      name: '@econym/dsh-plugin-fake',
       exports: { '.': { default: './lib/index.js' } },
       peerDependencies: { '@deepseek-ai/dsh-toolsfake': 'workspace:^' },
     })
@@ -61,8 +61,8 @@ describe('buildWorkspaceIndex', () => {
       dependsOn: ['@deepseek-ai/cordis'],
     })
 
-    expect(index.packages.get('@deepseek-ai/dsh-plugin-fake')).toEqual({
-      name: '@deepseek-ai/dsh-plugin-fake',
+    expect(index.packages.get('@econym/dsh-plugin-fake')).toEqual({
+      name: '@econym/dsh-plugin-fake',
       group: 'plugins',
       dir: 'packages/plugins/plugin-fake',
       exports: ['.'],

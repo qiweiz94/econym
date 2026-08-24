@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-impacted-tests`.
- * @module @deepseek-ai/dsh-plugin-impacted-tests/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-impacted-tests`.
+ * @module @econym/dsh-plugin-impacted-tests/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-impacted-tests'
+const PACKAGE_NAME = '@econym/dsh-plugin-impacted-tests'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-impacted-tests-invariant'

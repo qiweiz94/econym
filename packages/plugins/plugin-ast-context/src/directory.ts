@@ -1,7 +1,7 @@
 /**
  * Directory walker for `get_directory_outline`: collect the TypeScript files
  * of a tree in path order, bounded by a file cap, without following symlinks.
- * @module @deepseek-ai/dsh-plugin-ast-context/directory
+ * @module @econym/dsh-plugin-ast-context/directory
  */
 
 import { readFile, readdir, stat } from 'node:fs/promises'

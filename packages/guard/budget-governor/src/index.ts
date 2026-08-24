@@ -16,7 +16,7 @@
  * Remote runs (`local: false`) expose no local agent or session events and
  * are not governed. Named exports preserve loader injection metadata.
  * Decision record: the budget-governor Agent Note.
- * @module @deepseek-ai/dsh-budget-governor
+ * @module @econym/dsh-budget-governor
  */
 
 import type { Context } from '@deepseek-ai/cordis'

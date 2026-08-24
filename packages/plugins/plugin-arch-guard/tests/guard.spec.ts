@@ -42,7 +42,7 @@ const TOOLS = pkg({
 })
 
 const ARCH_GUARD = pkg({
-  name: '@deepseek-ai/dsh-plugin-arch-guard',
+  name: '@econym/dsh-plugin-arch-guard',
   group: 'plugins',
   dir: 'packages/plugins/plugin-arch-guard',
   exports: ['.', './invariant', './src/*'],
@@ -50,7 +50,7 @@ const ARCH_GUARD = pkg({
 })
 
 const AST_CONTEXT = pkg({
-  name: '@deepseek-ai/dsh-plugin-ast-context',
+  name: '@econym/dsh-plugin-ast-context',
   group: 'plugins',
   dir: 'packages/plugins/plugin-ast-context',
   exports: ['.', './invariant', './src/*'],
@@ -173,7 +173,7 @@ describe('checkModuleBoundary: unresolved workspace packages', () => {
 
 describe('checkModuleBoundary: self-import', () => {
   it('allows a package importing its own subpath by name', () => {
-    const result = checkModuleBoundary({ sourcePath: GUARD_SOURCE, targetImport: '@deepseek-ai/dsh-plugin-arch-guard/invariant' }, BASE_WORKSPACE)
+    const result = checkModuleBoundary({ sourcePath: GUARD_SOURCE, targetImport: '@econym/dsh-plugin-arch-guard/invariant' }, BASE_WORKSPACE)
     expect(result).toEqual({ allowed: true, rule: 'self-package-import' })
   })
 })
@@ -181,7 +181,7 @@ describe('checkModuleBoundary: self-import', () => {
 describe('checkModuleBoundary: tier direction (layer violations)', () => {
   it('rejects a capability-tier package importing a surface-tier plugin', () => {
     const result = checkModuleBoundary(
-      { sourcePath: `${TOOLS.dir}/src/index.ts`, targetImport: '@deepseek-ai/dsh-plugin-arch-guard' },
+      { sourcePath: `${TOOLS.dir}/src/index.ts`, targetImport: '@econym/dsh-plugin-arch-guard' },
       BASE_WORKSPACE,
     )
     expect(result.allowed).toBe(false)
@@ -224,7 +224,7 @@ describe('checkModuleBoundary: tier direction (layer violations)', () => {
 describe('checkModuleBoundary: plugins-do-not-import-siblings', () => {
   it('rejects a plugin importing an undeclared sibling plugin', () => {
     const result = checkModuleBoundary(
-      { sourcePath: GUARD_SOURCE, targetImport: '@deepseek-ai/dsh-plugin-ast-context' },
+      { sourcePath: GUARD_SOURCE, targetImport: '@econym/dsh-plugin-ast-context' },
       BASE_WORKSPACE,
     )
     expect(result.allowed).toBe(false)
@@ -236,7 +236,7 @@ describe('checkModuleBoundary: plugins-do-not-import-siblings', () => {
     const guardDeclaringSibling = pkg({ ...ARCH_GUARD, dependsOn: [...ARCH_GUARD.dependsOn, AST_CONTEXT.name] })
     const ws = workspace(CORDIS, TOOLS, INVARIANTS, guardDeclaringSibling, AST_CONTEXT)
     const result = checkModuleBoundary(
-      { sourcePath: GUARD_SOURCE, targetImport: '@deepseek-ai/dsh-plugin-ast-context' },
+      { sourcePath: GUARD_SOURCE, targetImport: '@econym/dsh-plugin-ast-context' },
       ws,
     )
     expect(result).toEqual({ allowed: true, rule: 'plugins-declared-sibling-import' })

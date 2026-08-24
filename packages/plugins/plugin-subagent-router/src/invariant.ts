@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-subagent-router`.
- * @module @deepseek-ai/dsh-plugin-subagent-router/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-subagent-router`.
+ * @module @econym/dsh-plugin-subagent-router/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-subagent-router'
+const PACKAGE_NAME = '@econym/dsh-plugin-subagent-router'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-subagent-router-invariant'

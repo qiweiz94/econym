@@ -5,7 +5,7 @@
  * constructed fixtures — this module is the only place in the package that
  * touches the filesystem, and it does so with plain synchronous reads, no
  * subprocess.
- * @module @deepseek-ai/dsh-plugin-arch-guard/workspace-index
+ * @module @econym/dsh-plugin-arch-guard/workspace-index
  */
 
 import { globSync, readFileSync } from 'node:fs'

@@ -1,12 +1,12 @@
 /**
- * Configuration types for `@deepseek-ai/dsh-budget-governor`. Ceilings
+ * Configuration types for `@econym/dsh-budget-governor`. Ceilings
  * are per delegated child run; every ceiling is optional, but a governor with
  * no ceiling at all is misconfiguration and fails at load. `Config` itself is
  * declared in `./index.ts`, not here: it merges with the runtime schema
  * value exported under the same name, which a re-exported type-only binding
  * cannot do (TS2395/TS2323).
  *
- * @module @deepseek-ai/dsh-budget-governor/types
+ * @module @econym/dsh-budget-governor/types
  */
 
 /** One model-facing edit tool whose calls participate in churn detection. */

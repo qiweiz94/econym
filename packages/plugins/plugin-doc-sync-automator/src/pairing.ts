@@ -22,7 +22,7 @@
  * disturb — from plain-text ATX heading scanning, as a self-test of the
  * splice. It is not a substitute for the full corpus gate; callers still run
  * `pnpm run verify-translation-pairing` for the complete check.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator/pairing
+ * @module @econym/dsh-plugin-doc-sync-automator/pairing
  */
 
 import { createHash } from 'node:crypto'

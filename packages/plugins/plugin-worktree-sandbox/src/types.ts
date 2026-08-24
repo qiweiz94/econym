@@ -1,7 +1,7 @@
 /**
- * Type-only contracts for `@deepseek-ai/dsh-plugin-worktree-sandbox`: the
+ * Type-only contracts for `@econym/dsh-plugin-worktree-sandbox`: the
  * sandbox tool's bounded output records and its structured result value.
- * @module @deepseek-ai/dsh-plugin-worktree-sandbox/types
+ * @module @econym/dsh-plugin-worktree-sandbox/types
  */
 
 /** One bounded output record: retained text plus whether bytes were dropped. */

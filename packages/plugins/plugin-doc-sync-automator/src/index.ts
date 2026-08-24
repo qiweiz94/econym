@@ -4,7 +4,7 @@
  * NEEDS-TRANSLATION marker, keeping the bilingual pair structurally valid
  * and its `.i18n.yaml` consistency record current without machine
  * translating anything. Named exports preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator
+ * @module @econym/dsh-plugin-doc-sync-automator
  */
 
 import type { Context } from '@deepseek-ai/cordis'

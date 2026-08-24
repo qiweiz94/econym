@@ -4,7 +4,7 @@
  * the trial's uncommitted diff vs its base commit through the output-retention
  * envelope, and remove the worktree. All processes go through `ctx.subprocess`;
  * the tool owns only orchestration and reporting.
- * @module @deepseek-ai/dsh-plugin-worktree-sandbox/worktree
+ * @module @econym/dsh-plugin-worktree-sandbox/worktree
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -1,7 +1,7 @@
 /**
- * Type-only contracts for `@deepseek-ai/dsh-plugin-subagent-router`: the
+ * Type-only contracts for `@econym/dsh-plugin-subagent-router`: the
  * capability needs a delegation imposes on a provider.
- * @module @deepseek-ai/dsh-plugin-subagent-router/types
+ * @module @econym/dsh-plugin-subagent-router/types
  */
 
 /** Start-time capabilities a delegation request needs from its provider. */

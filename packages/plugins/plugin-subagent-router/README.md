@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-subagent-router
+# @econym/dsh-plugin-subagent-router
 
 English | [中文](README.zh.md)
 

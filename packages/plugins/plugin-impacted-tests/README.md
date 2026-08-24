@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-impacted-tests
+# @econym/dsh-plugin-impacted-tests
 
 English | [中文](README.zh.md)
 

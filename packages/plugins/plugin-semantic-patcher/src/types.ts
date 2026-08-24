@@ -2,7 +2,7 @@
  * Types shared by the symbol locator, the patch writer, and the
  * `patch_symbol_body` tool contract. This module contains only types; the
  * runtime implementation lives in patcher.ts.
- * @module @deepseek-ai/dsh-plugin-semantic-patcher/types
+ * @module @econym/dsh-plugin-semantic-patcher/types
  */
 
 /** Kinds of TypeScript symbol whose body `patch_symbol_body` can replace. */

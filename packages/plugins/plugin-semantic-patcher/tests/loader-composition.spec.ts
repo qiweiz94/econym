@@ -13,7 +13,7 @@ import { CallId } from '@deepseek-ai/dsh-llm'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PluginSemanticPatcher from '@deepseek-ai/dsh-plugin-semantic-patcher'
+import * as PluginSemanticPatcher from '@econym/dsh-plugin-semantic-patcher'
 
 let root: string | undefined
 let context: Context | undefined
@@ -34,7 +34,7 @@ async function boot(source: string, config: string = '\n  config:\n    cwd: ROOT
     "- name: '@deepseek-ai/dsh-agent'",
     "- name: '@deepseek-ai/dsh-system-prompt'",
     "- name: '@deepseek-ai/dsh-tools'",
-    `- name: '@deepseek-ai/dsh-plugin-semantic-patcher'${config.replace('ROOT', root)}`,
+    `- name: '@econym/dsh-plugin-semantic-patcher'${config.replace('ROOT', root)}`,
     '',
   ].join('\n'))
 
@@ -47,7 +47,7 @@ async function boot(source: string, config: string = '\n  config:\n    cwd: ROOT
     ['@deepseek-ai/dsh-agent', AgentRegistry],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@deepseek-ai/dsh-plugin-semantic-patcher', PluginSemanticPatcher],
+    ['@econym/dsh-plugin-semantic-patcher', PluginSemanticPatcher],
   ])
   ctx.loader.internal = {
     version: 'v2',

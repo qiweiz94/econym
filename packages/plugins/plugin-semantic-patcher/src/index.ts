@@ -4,7 +4,7 @@
  * an edit lands on the declaration the model named even when its body text
  * appears elsewhere in the file. Named exports preserve loader injection
  * metadata.
- * @module @deepseek-ai/dsh-plugin-semantic-patcher
+ * @module @econym/dsh-plugin-semantic-patcher
  */
 
 import type { Context } from '@deepseek-ai/cordis'

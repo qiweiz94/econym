@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-diagnostic-sifter`.
- * @module @deepseek-ai/dsh-plugin-diagnostic-sifter/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-diagnostic-sifter`.
+ * @module @econym/dsh-plugin-diagnostic-sifter/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-diagnostic-sifter'
+const PACKAGE_NAME = '@econym/dsh-plugin-diagnostic-sifter'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-diagnostic-sifter-invariant'

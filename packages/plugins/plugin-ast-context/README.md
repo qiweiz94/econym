@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-ast-context
+# @econym/dsh-plugin-ast-context
 
 English | [中文](README.zh.md)
 

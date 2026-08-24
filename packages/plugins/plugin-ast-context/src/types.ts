@@ -1,7 +1,7 @@
 /**
  * Types shared by the AST extractor and the `get_file_outline` tool contract.
  * This module contains only types; the runtime implementation lives in extractor.ts.
- * @module @deepseek-ai/dsh-plugin-ast-context/types
+ * @module @econym/dsh-plugin-ast-context/types
  */
 
 /** Kinds of TypeScript declarations the outline reports. */

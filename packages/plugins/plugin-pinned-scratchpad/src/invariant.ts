@@ -1,10 +1,10 @@
-/** Package-owned durable scratchpad-snapshot invariants. @module @deepseek-ai/dsh-plugin-pinned-scratchpad/invariant */
+/** Package-owned durable scratchpad-snapshot invariants. @module @econym/dsh-plugin-pinned-scratchpad/invariant */
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-pinned-scratchpad'
+const PACKAGE_NAME = '@econym/dsh-plugin-pinned-scratchpad'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-pinned-scratchpad-invariant'

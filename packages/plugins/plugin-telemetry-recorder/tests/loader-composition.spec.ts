@@ -17,8 +17,8 @@ import type { Session } from '@deepseek-ai/dsh-session'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PluginTelemetry from '@deepseek-ai/dsh-plugin-telemetry-recorder'
-import type { TelemetrySnapshot } from '@deepseek-ai/dsh-plugin-telemetry-recorder'
+import * as PluginTelemetry from '@econym/dsh-plugin-telemetry-recorder'
+import type { TelemetrySnapshot } from '@econym/dsh-plugin-telemetry-recorder'
 
 let root: string | undefined
 let context: Context | undefined
@@ -50,7 +50,7 @@ async function boot(pluginEntry: string): Promise<Context> {
     ['@deepseek-ai/dsh-session', SessionStore],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@deepseek-ai/dsh-plugin-telemetry-recorder', PluginTelemetry],
+    ['@econym/dsh-plugin-telemetry-recorder', PluginTelemetry],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -85,7 +85,7 @@ function conversation(session: Session): void {
 
 describe('plugin-telemetry-recorder real Loader composition through cordis.yml', () => {
   it('exposes the telemetry tool and answers from the calling session\'s own log', async () => {
-    const ctx = await boot("- name: '@deepseek-ai/dsh-plugin-telemetry-recorder'\n  config:\n    windowTurns: 5")
+    const ctx = await boot("- name: '@econym/dsh-plugin-telemetry-recorder'\n  config:\n    windowTurns: 5")
 
     const schema = ctx.tools.schemas().find(entry => entry.name === 'get_session_telemetry')
     expect(schema).toBeDefined()
@@ -114,11 +114,11 @@ describe('plugin-telemetry-recorder real Loader composition through cordis.yml',
   })
 
   it('removes the tool when the plugin fiber unloads (HMR safety)', async () => {
-    const ctx = await boot("- name: '@deepseek-ai/dsh-plugin-telemetry-recorder'")
+    const ctx = await boot("- name: '@econym/dsh-plugin-telemetry-recorder'")
     expect(ctx.tools.schemas().some(entry => entry.name === 'get_session_telemetry')).toBe(true)
 
     const entry = [...ctx.loader.entries()].find(candidate =>
-      candidate.options.name === '@deepseek-ai/dsh-plugin-telemetry-recorder')
+      candidate.options.name === '@econym/dsh-plugin-telemetry-recorder')
     expect(entry).toBeDefined()
     await entry?.fiber?.dispose()
 
@@ -127,7 +127,7 @@ describe('plugin-telemetry-recorder real Loader composition through cordis.yml',
 
   it('fails loud at load when windowTurns is not positive', async () => {
     await expect(boot(
-      "- name: '@deepseek-ai/dsh-plugin-telemetry-recorder'\n  config:\n    windowTurns: 0",
+      "- name: '@econym/dsh-plugin-telemetry-recorder'\n  config:\n    windowTurns: 0",
     )).rejects.toThrow(/windowTurns/)
   })
 })

@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-budget-governor
+# @econym/dsh-budget-governor
 
 English | [中文](README.zh.md)
 
@@ -19,7 +19,7 @@ All three ceilings are optional, but at least one must be configured — a gover
 ## Config
 
 ```yaml
-- name: '@deepseek-ai/dsh-budget-governor'
+- name: '@econym/dsh-budget-governor'
   config:
     maxChildTokens: 200000
     maxConsecutiveToolFailures: 5

@@ -13,7 +13,7 @@ import Include from '@deepseek-ai/cordis-plugin-include'
 import { CallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PluginDocSyncAutomator from '@deepseek-ai/dsh-plugin-doc-sync-automator'
+import * as PluginDocSyncAutomator from '@econym/dsh-plugin-doc-sync-automator'
 import type { SyncBilingualPairResult } from '../src/types.ts'
 
 let configRoot: string | undefined
@@ -55,7 +55,7 @@ async function boot(pluginEntry: string): Promise<Context> {
   const modules = new Map<string, unknown>([
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
-    ['@deepseek-ai/dsh-plugin-doc-sync-automator', PluginDocSyncAutomator],
+    ['@econym/dsh-plugin-doc-sync-automator', PluginDocSyncAutomator],
   ])
   ctx.loader.internal = {
     version: 'v2',
@@ -79,7 +79,7 @@ describe('plugin-doc-sync-automator real Loader composition through cordis.yml',
     await writeFile(join(docsRoot, 'doc.md'), SOURCE)
     await writeFile(join(docsRoot, 'doc.zh.md'), MIRROR)
 
-    const ctx = await boot(`- name: '@deepseek-ai/dsh-plugin-doc-sync-automator'\n  config:\n    root: ${docsRoot}`)
+    const ctx = await boot(`- name: '@econym/dsh-plugin-doc-sync-automator'\n  config:\n    root: ${docsRoot}`)
 
     const schema = ctx.tools.schemas().find(s => s.name === 'sync_bilingual_pair')
     expect(schema).toBeDefined()
@@ -101,7 +101,7 @@ describe('plugin-doc-sync-automator real Loader composition through cordis.yml',
     docsRoot = await mkdtemp(join(tmpdir(), 'dsh-doc-sync-docs-'))
     await mkdir(docsRoot, { recursive: true })
     await expect(boot(
-      `- name: '@deepseek-ai/dsh-plugin-doc-sync-automator'\n  config:\n    root: ${docsRoot}\n    budgetManifestPath: 42`,
+      `- name: '@econym/dsh-plugin-doc-sync-automator'\n  config:\n    root: ${docsRoot}\n    budgetManifestPath: 42`,
     )).rejects.toThrow()
   }, 30_000)
 })

@@ -1,0 +1,17 @@
+packages:
+  - packages/plugins/*
+  - packages/guard/*
+
+# pnpm 10+ blocks any dependency shipping an install/build script until it is
+# explicitly reviewed here. tree-sitter (native bindings for the AST-context
+# outline tool), esbuild (bundling), and the subprocess provider native
+# backends (node-pty/koffi, used by diagnostic-sifter, impacted-tests, and
+# worktree-sandbox tests) genuinely need theirs.
+allowBuilds:
+  tree-sitter: true
+  tree-sitter-javascript: true
+  tree-sitter-typescript: true
+  esbuild: true
+  node-pty: true
+  koffi: true
+  '@deepseek-ai/dsh-subprocess-local': true

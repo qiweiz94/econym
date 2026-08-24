@@ -3,7 +3,7 @@
  * `scratchpad/write` session-event declaration plus its payload type, free of
  * this package's host-side value imports (dsh-tools, schemastery).
  *
- * @module @deepseek-ai/dsh-plugin-pinned-scratchpad/types
+ * @module @econym/dsh-plugin-pinned-scratchpad/types
  */
 
 import type {} from '@deepseek-ai/dsh-session/types'

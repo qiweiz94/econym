@@ -6,7 +6,7 @@
  * log and the subagent lifecycle pair. Named exports preserve loader injection
  * metadata.
  *
- * @module @deepseek-ai/dsh-plugin-telemetry-recorder
+ * @module @econym/dsh-plugin-telemetry-recorder
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-semantic-patcher`.
- * @module @deepseek-ai/dsh-plugin-semantic-patcher/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-semantic-patcher`.
+ * @module @econym/dsh-plugin-semantic-patcher/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-semantic-patcher'
+const PACKAGE_NAME = '@econym/dsh-plugin-semantic-patcher'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-semantic-patcher-invariant'

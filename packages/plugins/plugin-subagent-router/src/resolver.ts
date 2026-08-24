@@ -3,7 +3,7 @@
  * delegated task label against the configured routes, derive the start-time
  * capabilities the request needs, and pick the first registered provider that
  * supports them — failing loud when none can serve the delegation.
- * @module @deepseek-ai/dsh-plugin-subagent-router/resolver
+ * @module @econym/dsh-plugin-subagent-router/resolver
  */
 
 import type { Context } from '@deepseek-ai/cordis'

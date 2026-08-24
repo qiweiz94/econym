@@ -3,8 +3,8 @@ import { Context } from '@deepseek-ai/cordis'
 import SessionStore, { type Session, type SessionEvent } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as PinnedScratchpad from '@deepseek-ai/dsh-plugin-pinned-scratchpad'
-import * as ScratchpadInvariant from '@deepseek-ai/dsh-plugin-pinned-scratchpad/invariant'
+import * as PinnedScratchpad from '@econym/dsh-plugin-pinned-scratchpad'
+import * as ScratchpadInvariant from '@econym/dsh-plugin-pinned-scratchpad/invariant'
 import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 
 async function setup(): Promise<Context> {

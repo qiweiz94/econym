@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-arch-guard`.
- * @module @deepseek-ai/dsh-plugin-arch-guard/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-arch-guard`.
+ * @module @econym/dsh-plugin-arch-guard/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-arch-guard'
+const PACKAGE_NAME = '@econym/dsh-plugin-arch-guard'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-arch-guard-invariant'

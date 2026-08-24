@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-plugin-doc-sync-automator`.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator/invariant
+ * Package-owned invariant companion for `@econym/dsh-plugin-doc-sync-automator`.
+ * @module @econym/dsh-plugin-doc-sync-automator/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-plugin-doc-sync-automator'
+const PACKAGE_NAME = '@econym/dsh-plugin-doc-sync-automator'
 
 /** Cordis companion plugin name. */
 export const name = 'plugin-doc-sync-automator-invariant'

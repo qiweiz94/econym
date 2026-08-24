@@ -18,7 +18,7 @@
  * and a macOS `tmpdir()` fixture is reached through a `/var` → `/private/var`
  * symlink. A single normalizer is what keeps "selects nothing" a real answer
  * instead of a path-shape mismatch.
- * @module @deepseek-ai/dsh-plugin-impacted-tests/analyzer
+ * @module @econym/dsh-plugin-impacted-tests/analyzer
  */
 
 import { globSync, readFileSync, realpathSync } from 'node:fs'

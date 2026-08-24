@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-telemetry-recorder
+# @econym/dsh-plugin-telemetry-recorder
 
 English | [中文](README.zh.md)
 

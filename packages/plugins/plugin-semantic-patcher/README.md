@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-semantic-patcher
+# @econym/dsh-plugin-semantic-patcher
 
 English | [中文](README.zh.md)
 

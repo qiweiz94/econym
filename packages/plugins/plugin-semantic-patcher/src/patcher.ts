@@ -9,7 +9,7 @@
  * into the UTF-8 encoding. Every slice here is therefore taken on the string;
  * slicing a Buffer with these indices would misplace the span in any file
  * containing non-ASCII text before the target.
- * @module @deepseek-ai/dsh-plugin-semantic-patcher/patcher
+ * @module @econym/dsh-plugin-semantic-patcher/patcher
  */
 
 import { readFile, stat } from 'node:fs/promises'

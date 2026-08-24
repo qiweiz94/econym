@@ -2,30 +2,13 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "lib/types"
+    "outDir": "lib",
+    "noEmit": false,
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true
   },
-  "include": ["src"],
-  "references": [
-    {
-      "path": "../../../vendor/cosmokit"
-    },
-    {
-      "path": "../../../vendor/cordis"
-    },
-    {
-      "path": "../../../vendor/schemastery"
-    },
-    {
-      "path": "../../core/tools"
-    },
-    {
-      "path": "../../util/output-retention"
-    },
-    {
-      "path": "../../subprocess/subprocess"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    }
+  "include": [
+    "src"
   ]
 }

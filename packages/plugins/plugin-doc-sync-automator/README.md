@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-doc-sync-automator
+# @econym/dsh-plugin-doc-sync-automator
 
 English | [中文](README.zh.md)
 

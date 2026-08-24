@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-budget-governor`.
- * @module @deepseek-ai/dsh-budget-governor/invariant
+ * Package-owned invariant companion for `@econym/dsh-budget-governor`.
+ * @module @econym/dsh-budget-governor/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-budget-governor'
+const PACKAGE_NAME = '@econym/dsh-budget-governor'
 
 /** Cordis companion plugin name. */
 export const name = 'budget-governor-invariant'

@@ -4,7 +4,7 @@
  * then execute strictly those suites through the configured runner. With no
  * changes it runs nothing; a changed file no suite imports selects nothing.
  * Named exports preserve loader injection metadata.
- * @module @deepseek-ai/dsh-plugin-impacted-tests
+ * @module @econym/dsh-plugin-impacted-tests
  */
 
 import type { Context } from '@deepseek-ai/cordis'

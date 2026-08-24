@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-pinned-scratchpad
+# @econym/dsh-plugin-pinned-scratchpad
 
 [English](README.md) | 中文
 

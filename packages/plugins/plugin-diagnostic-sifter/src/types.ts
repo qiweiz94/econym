@@ -1,7 +1,7 @@
 /**
- * Type-only contracts for `@deepseek-ai/dsh-plugin-diagnostic-sifter`: the
+ * Type-only contracts for `@econym/dsh-plugin-diagnostic-sifter`: the
  * sifted diagnostic records and the tool's structured result value.
- * @module @deepseek-ai/dsh-plugin-diagnostic-sifter/types
+ * @module @econym/dsh-plugin-diagnostic-sifter/types
  */
 
 /** The two checks the tool can run. */

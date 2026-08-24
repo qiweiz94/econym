@@ -4,7 +4,7 @@
  * output-retention envelope, so the sifter always sees the FIRST diagnostics
  * (checks report errors from the start of their output). The tool owns only
  * orchestration; command construction stays config-owned in the plugin.
- * @module @deepseek-ai/dsh-plugin-diagnostic-sifter/spawn
+ * @module @econym/dsh-plugin-diagnostic-sifter/spawn
  */
 
 import type { Context } from '@deepseek-ai/cordis'

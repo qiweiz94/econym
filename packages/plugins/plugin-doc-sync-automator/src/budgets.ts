@@ -5,7 +5,7 @@
  * imported from a package), applied against the SAME manifest file
  * (`scripts/doc-budgets.manifest.json`) read at call time, so a ceiling
  * change made for the corpus-wide gate is honored here without drift.
- * @module @deepseek-ai/dsh-plugin-doc-sync-automator/budgets
+ * @module @econym/dsh-plugin-doc-sync-automator/budgets
  */
 
 import { existsSync, readFileSync } from 'node:fs'

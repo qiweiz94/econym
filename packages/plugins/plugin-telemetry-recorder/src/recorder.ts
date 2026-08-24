@@ -12,7 +12,7 @@
  * a consumed-event cursor — so a session that was resumed, forked, or already
  * running when this plugin mounted reports its real history rather than zeros.
  *
- * @module @deepseek-ai/dsh-plugin-telemetry-recorder/recorder
+ * @module @econym/dsh-plugin-telemetry-recorder/recorder
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-plugin-arch-guard
+# @econym/dsh-plugin-arch-guard
 
 English | [中文](README.zh.md)
 

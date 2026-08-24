@@ -1,8 +1,8 @@
 /**
- * Type-only contracts for `@deepseek-ai/dsh-plugin-impacted-tests`: the import
+ * Type-only contracts for `@econym/dsh-plugin-impacted-tests`: the import
  * DAG, the impact analysis it answers, the suite-runner seam, and the tool's
  * structured result value.
- * @module @deepseek-ai/dsh-plugin-impacted-tests/types
+ * @module @econym/dsh-plugin-impacted-tests/types
  */
 
 /** One bounded output record: retained text plus whether bytes were dropped. */
