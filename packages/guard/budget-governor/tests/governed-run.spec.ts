@@ -17,7 +17,7 @@ import SubagentRuntime, { SubagentRunId, type SubagentStartRequest } from '@deep
 import * as fork from '@deepseek-ai/dsh-subagent-fork-in-process'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
+import { MockAdapter, textResponse, toolCallResponse } from './fixtures/mock-adapter.ts'
 import * as governor from '../src/index.ts'
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]

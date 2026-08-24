@@ -95,17 +95,14 @@ export function checkModuleBoundary(
   }
 
   const { packageName, subpath } = splitBareSpecifier(input.targetImport)
-  if (!packageName.startsWith('@deepseek-ai/')) {
-    return { allowed: true, rule: 'external-dependency' }
-  }
-
+  // Scope-agnostic membership: the workspace index owns membership, not a
+  // hardcoded scope prefix. In the monorepo every @deepseek-ai/* name was a
+  // candidate; in the standalone econym repo the plugin packages live under
+  // @econym/* and the @deepseek-ai/* harness packages are external registry
+  // dependencies. Anything absent from the index is external.
   const targetPkg = workspace.packages.get(packageName)
   if (targetPkg === undefined) {
-    return {
-      allowed: false,
-      rule: 'unknown-workspace-package',
-      suggestion: `${packageName} is not a known @deepseek-ai/* workspace package; check the name, or that the workspace index was built after it was added.`,
-    }
+    return { allowed: true, rule: 'external-dependency' }
   }
 
   if (targetPkg.name === sourcePkg.name) {

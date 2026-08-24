@@ -21,7 +21,7 @@ import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as ForkProvider from '@deepseek-ai/dsh-subagent-fork-in-process'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import * as PluginGovernor from '../src/index.ts'
-import { MockAdapter, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
+import { MockAdapter, toolCallResponse } from './fixtures/mock-adapter.ts'
 
 let root: string | undefined
 let context: Context | undefined

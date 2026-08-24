@@ -163,11 +163,13 @@ describe('checkModuleBoundary: external dependencies', () => {
 })
 
 describe('checkModuleBoundary: unresolved workspace packages', () => {
-  it('rejects an @deepseek-ai package absent from the workspace index', () => {
+  it('treats an @deepseek-ai package absent from the workspace index as external', () => {
+    // Standalone semantics: the workspace index owns membership; a package
+    // not scanned from packages/ or vendor/ (e.g. a registry @deepseek-ai/*
+    // harness dependency) is external, not a workspace error.
     const result = checkModuleBoundary({ sourcePath: GUARD_SOURCE, targetImport: '@deepseek-ai/dsh-does-not-exist' }, BASE_WORKSPACE)
-    expect(result.allowed).toBe(false)
-    expect(result.rule).toBe('unknown-workspace-package')
-    expect((result as { suggestion?: string }).suggestion).toContain('@deepseek-ai/dsh-does-not-exist')
+    expect(result.allowed).toBe(true)
+    expect(result.rule).toBe('external-dependency')
   })
 })
 

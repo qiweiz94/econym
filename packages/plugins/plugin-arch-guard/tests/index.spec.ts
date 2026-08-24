@@ -76,11 +76,13 @@ describe('plugin-arch-guard apply()', () => {
       signal: testSignal,
       callId: CallId('index-spec-default-root'),
       name: 'check_module_boundary',
+      // In the standalone repo @deepseek-ai/* packages are external
+      // dependencies from the registry, not workspace members.
       arguments: { sourcePath: 'packages/plugins/plugin-arch-guard/src/guard.ts', targetImport: '@deepseek-ai/dsh-tools' },
     })
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected check_module_boundary success')
-    expect(result.value).toEqual({ allowed: true, rule: 'legal-cross-package-import' })
+    expect(result.value).toEqual({ allowed: true, rule: 'external-dependency' })
   })
 
   it('presents the call as a generic read card naming the proposed import', async () => {
