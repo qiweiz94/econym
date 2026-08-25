@@ -9,6 +9,8 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { realpathSync } from 'node:fs'
+import { readdir, stat } from 'node:fs/promises'
+import { join } from 'node:path'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import { TextRetainer, type RetainedText } from '@deepseek-ai/dsh-output-retention'
 
@@ -203,4 +205,51 @@ export function parseChangedFiles(porcelain: string): string[] {
     if (path.length > 0) files.push(path)
   }
   return files
+}
+
+/** Options for {@link sweepStaleWorktrees}. */
+export interface SweepStaleOptions {
+  /** The main repository root; `git worktree prune` runs there. */
+  readonly repoRoot: string
+  /** The directory holding `subagent-*` trial worktrees. */
+  readonly worktreeRoot: string
+  /** The git binary path. */
+  readonly git: string
+  /** Maximum trial age in milliseconds; older trials are removed. */
+  readonly staleAfterMs: number
+}
+
+/**
+ * Remove trial worktrees older than `staleAfterMs` and prune dangling git
+ * worktree metadata. This reclaims `.dsh/worktrees/subagent-*` directories
+ * left behind when a harness process crashed mid-trial (the normal per-call
+ * cleanup never ran). Age is read from the directory's own mtime, which the
+ * trial touches for its lifetime; deliberately persistent named trials are
+ * therefore swept only once they go genuinely stale.
+ * @param ctx - the Cordis context carrying `ctx.subprocess`.
+ * @param options - repository root, worktree root, git binary, and the age ceiling.
+ * @returns the trial worktree paths that were removed.
+ */
+export async function sweepStaleWorktrees(ctx: Context, options: SweepStaleOptions): Promise<string[]> {
+  const swept: string[] = []
+  try {
+    const entries = await readdir(options.worktreeRoot, { withFileTypes: true })
+    const cutoff = Date.now() - options.staleAfterMs
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.startsWith('subagent-')) continue
+      const path = join(options.worktreeRoot, entry.name)
+      const stats = await stat(path)
+      if (stats.mtimeMs > cutoff) continue
+      await removeWorktree(ctx, options.repoRoot, options.git, path)
+      swept.push(path)
+    }
+  } catch (error: unknown) {
+    // An absent worktree root means no trials to sweep; every other failure
+    // (permissions, IO) surfaces to the caller.
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
+  // Dangling registrations whose directories were deleted out-of-band cannot
+  // be force-removed; `prune` is the git-sanctioned metadata cleanup.
+  await runCommand(ctx, options.repoRoot, [options.git, 'worktree', 'prune'], 8_192)
+  return swept
 }

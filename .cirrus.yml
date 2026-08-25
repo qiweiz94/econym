@@ -1,0 +1,14 @@
+# Cirrus CI — free tier for public repositories. Replaces the GitHub Actions
+# workflow while the account's Actions billing state blocks runs; delete this
+# file and restore .github/workflows/ci.yml if Actions is re-enabled.
+task:
+  name: test
+  container:
+    image: node:24
+  node_modules_cache:
+    folder: node_modules
+    fingerprint_script: cat pnpm-lock.yaml
+    populate_script: npm install -g pnpm@11.7.0 && pnpm install --frozen-lockfile
+  build_script: pnpm run build
+  typecheck_script: pnpm run typecheck
+  test_script: pnpm test

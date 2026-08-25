@@ -107,6 +107,24 @@ export function apply(ctx: Context, config: Config): void {
     throw new Error('plugin-subagent-router: `toolFilter` is configured but names neither `allow` nor `deny` — remove the key or fill the filter')
   }
 
+  // Delegations resolve against the live subagent registry at call time, so a
+  // provider that drops mid-flight fails (or falls to its next candidate)
+  // without stale routing state. These subscriptions add the missing half:
+  // proactive diagnostics when a CONFIGURED route's backend appears or
+  // vanishes, instead of a silent failure at the next delegation.
+  const configured = new Set([
+    ...config.providers,
+    ...(config.routes ?? []).flatMap(route => route.providers),
+  ])
+  ctx.on('subagent/provider-removed', (name) => {
+    if (!configured.has(name)) return
+    ctx.logger?.warn?.(`plugin-subagent-router: configured provider "${name}" left the subagent registry; delegations routed to it fail until it re-registers`)
+  })
+  ctx.on('subagent/provider-added', (provider) => {
+    if (!configured.has(provider.name)) return
+    ctx.logger?.info?.(`plugin-subagent-router: configured provider "${provider.name}" re-registered; routed delegations resume`)
+  })
+
   const toolName = config.toolName ?? 'subagent'
   ctx.tools.register(defineTool({
     name: toolName,

@@ -24,11 +24,15 @@ import {
   resolveBaseCommit,
   resolveWorktreeHead,
   runCommand,
+  sweepStaleWorktrees,
   worktreeExists,
 } from './worktree.ts'
 
 export const name = 'plugin-worktree-sandbox'
 export const inject = ['tools', 'subprocess']
+
+/** Default maximum age for a boot-time stale-trial sweep (24 hours). */
+const DEFAULT_GC_STALE_AFTER_MS = 86_400_000
 
 /** Runtime configuration for the sandbox tool. */
 export interface Config {
@@ -48,6 +52,14 @@ export interface Config {
   cleanup?: boolean
   /** Path to the git binary; defaults to `git`. */
   gitBinary?: string
+  /**
+   * Maximum age in milliseconds for a boot-time stale-trial sweep over
+   * `.dsh/worktrees/subagent-*`; defaults to 24 hours. Trials left by a crashed
+   * harness process are removed and dangling worktree metadata is pruned;
+   * deliberately persistent named trials are swept only once they go this
+   * stale. `0` disables the age-based sweep (the metadata prune still runs).
+   */
+  gcStaleAfterMs?: number
 }
 
 /** Runtime configuration schema for the sandbox tool. */
@@ -60,6 +72,7 @@ export const Config: z<Config> = z.object({
   toolName: z.string().default('sandbox_exec'),
   cleanup: z.boolean().default(true),
   gitBinary: z.string().default('git'),
+  gcStaleAfterMs: z.number().step(1).min(0).default(DEFAULT_GC_STALE_AFTER_MS),
 })
 
 /** Render the structured sandbox result as model-facing text. */
@@ -94,6 +107,42 @@ function renderSandboxResult(result: SandboxExecResult): string {
  */
 export function apply(ctx: Context, config: Config): void {
   const toolName = config.toolName ?? 'sandbox_exec'
+  const repoRoot = config.cwd ?? process.cwd()
+  const worktreeRoot = config.worktreeRoot ?? join(repoRoot, '.dsh', 'worktrees')
+  const git = config.gitBinary ?? 'git'
+
+  // Trials left on disk by a crashed harness process are garbage-collected
+  // here: age-stale directories are force-removed and dangling git metadata is
+  // pruned. The sweep runs detached so a slow or failed cleanup can never
+  // delay the tool mount.
+  const staleAfterMs = config.gcStaleAfterMs ?? DEFAULT_GC_STALE_AFTER_MS
+  const warn = (message: string): void => { ctx.logger?.warn?.(`plugin-worktree-sandbox: ${message}`) }
+  const gc = staleAfterMs > 0
+    ? sweepStaleWorktrees(ctx, { repoRoot, worktreeRoot, git, staleAfterMs })
+    : runCommand(ctx, repoRoot, [git, 'worktree', 'prune'], 8_192).then(() => [])
+  void gc.then(
+    swept => { if (swept.length > 0) warn(`boot sweep removed ${swept.length} stale trial worktree(s): ${swept.join(', ')}`) },
+    error => { warn(`boot sweep failed: ${String(error)}`) },
+  )
+
+  // Trials intentionally kept across calls (`cleanup: false`, or a cleanup
+  // failure) are tracked here so graceful disposal can still reclaim the ones
+  // the caller never named. Explicitly named trials persist by design — the
+  // caller chose their identity — and are only reclaimed by the boot sweep
+  // once they go stale.
+  const persistentTrials = new Map<string, boolean>()
+
+  ctx.effect(() => () => {
+    for (const [path, named] of persistentTrials) {
+      if (named) continue
+      persistentTrials.delete(path)
+      /* v8 ignore next -- disposal races process exit; the removal itself is covered by the per-call tests. */
+      void removeWorktree(ctx, repoRoot, git, path).catch(error => {
+        warn(`disposal could not remove unnamed trial worktree ${path}: ${String(error)}`)
+      })
+    }
+  }, 'plugin-worktree-sandbox: dispose leftover unnamed trial worktrees')
+
   ctx.tools.register(defineTool({
     name: toolName,
     description: 'Run a command inside an isolated git worktree (a disposable trial) and return the trial\'s git diff and the command\'s exit status. The worktree is detached from the current branch and removed after the call, so the trial cannot change the main working tree. Use it to safely experiment (e.g. a subagent trial) before committing changes to the real tree.',
@@ -158,11 +207,9 @@ export function apply(ctx: Context, config: Config): void {
     // sandbox calls cannot corrupt one another's state.
     isConcurrencySafe: () => true,
     async execute(args, exec) {
-      const repoRoot = config.cwd ?? process.cwd()
-      const worktreeRoot = config.worktreeRoot ?? join(repoRoot, '.dsh', 'worktrees')
-      const git = config.gitBinary ?? 'git'
       const envelope = config.maxOutputBytes ?? 15_000
       const id = typeof args.id === 'string' && args.id.length > 0 ? args.id : randomUUID().slice(0, 8)
+      const named = typeof args.id === 'string' && args.id.length > 0
       // The id lands in a worktree path; the tool JSON validator supports no
       // pattern constraint, so reject traversal outright before any operation.
       if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id)) {
@@ -228,14 +275,19 @@ export function apply(ctx: Context, config: Config): void {
       }
 
       // Clean up the trial worktree on EVERY exit path (success or failure),
-      // never masking the primary result or error.
+      // never masking the primary result or error. A skipped cleanup leaves a
+      // persistent trial: tracked for disposal unless the caller named it.
       let cleanupError: string | undefined
       if (config.cleanup !== false) {
         try {
           await removeWorktree(ctx, repoRoot, git, worktreePath)
+          persistentTrials.delete(worktreePath)
         } catch (error: unknown) {
           cleanupError = String(error)
+          persistentTrials.set(worktreePath, named)
         }
+      } else {
+        persistentTrials.set(worktreePath, named)
       }
       if (primaryError !== undefined) {
         /* v8 ignore next -- the subprocess seam and the git guards only throw Error instances; the wrap answers the unknown-typed catch. */
