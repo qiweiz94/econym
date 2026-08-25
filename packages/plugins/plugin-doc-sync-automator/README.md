@@ -23,7 +23,7 @@ After a successful splice the pair's `.i18n.yaml` consistency record is rewritte
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -31,7 +31,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`sync_bilingual_pair` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-doc-sync-automator): a required `docPath` string and a required `updatedSection` object carrying a `heading` string. Plugin config (repository root, budget-manifest path, tool name) is validated at load; it changes no schema field, only where the tool reads and writes.
+The model sees the generated `sync_bilingual_pair` schema: a required `docPath` string and a required `updatedSection` object carrying a `heading` string. Plugin config (repository root, budget-manifest path, tool name) is validated at load; it changes no schema field, only where the tool reads and writes.
 
 #### Token effect
 

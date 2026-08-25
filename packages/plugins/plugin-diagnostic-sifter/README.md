@@ -25,7 +25,7 @@ A failing exit that produced no parseable diagnostics — or output the sifter d
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -33,7 +33,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`run_diagnostic_check` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-diagnostic-sifter): a required `command` (`typecheck` or `test`) and an optional `targetPath` string. Plugin config (working directory, `tsc`/`vitest` argv, output envelope, timeout, tool name) is validated at load and fails loud on invalid values (e.g. an empty `tscArgs`); it changes no schema field, only which check runs and how.
+The model sees the generated `run_diagnostic_check` schema: a required `command` (`typecheck` or `test`) and an optional `targetPath` string. Plugin config (working directory, `tsc`/`vitest` argv, output envelope, timeout, tool name) is validated at load and fails loud on invalid values (e.g. an empty `tscArgs`); it changes no schema field, only which check runs and how.
 
 #### Token effect
 

@@ -36,7 +36,7 @@ usage 归属于其报告时处于打开状态的那一轮。同一步骤若报�
 
 ## 导出形态
 
-函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且**没有**默认导出。多余的 `export default` 会经 Loader 的 `unwrapExports` 折叠模块并丢弃 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且**没有**默认导出。多余的 `export default` 会经 Loader 的 `unwrapExports` 折叠模块并丢弃 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## Model Experience
 
@@ -44,7 +44,7 @@ usage 归属于其报告时处于打开状态的那一轮。同一步骤若报�
 
 #### 模型看到什么
 
-模型看到生成的 [`get_session_telemetry` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-telemetry-recorder)：完全没有参数，输出对象的成员恰在折叠可能留空之处标注为可选。插件配置（`windowTurns`）在加载时校验，取非正值即高声失败；它不改变任何 schema 字段，只决定所报均值覆盖多少个已结束轮次。
+模型看到生成的 `get_session_telemetry` schema：完全没有参数，输出对象的成员恰在折叠可能留空之处标注为可选。插件配置（`windowTurns`）在加载时校验，取非正值即高声失败；它不改变任何 schema 字段，只决定所报均值覆盖多少个已结束轮次。
 
 #### Token 影响
 

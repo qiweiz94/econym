@@ -34,7 +34,7 @@ Note that node-tree-sitter reports `startIndex`/`endIndex` as **UTF-16 code-unit
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -42,7 +42,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`patch_symbol_body` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-semantic-patcher): three required strings (`path`, `symbol`, `newBody`) and a structured result of `path`/`symbol`/`kind`/`line`/`endLine`. Plugin config (`cwd`, `maxBytes` default 2 MiB) is validated at load and fails loud on invalid values; it changes no schema field, only whether a call resolves or returns a directing error result.
+The model sees the generated `patch_symbol_body` schema: three required strings (`path`, `symbol`, `newBody`) and a structured result of `path`/`symbol`/`kind`/`line`/`endLine`. Plugin config (`cwd`, `maxBytes` default 2 MiB) is validated at load and fails loud on invalid values; it changes no schema field, only whether a call resolves or returns a directing error result.
 
 #### Token effect
 

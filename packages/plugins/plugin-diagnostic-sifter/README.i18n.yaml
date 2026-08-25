@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-diagnostic-sifter/README.md
-README.md: ce41fb833739beaf351f67c89c7de8297b92496b
-README.zh.md: 0570f80069d09e6496bc03753762f33e44b02b51
+README.md: b4b69b9fc80398f57323321841674f9681b950cd
+README.zh.md: 978b25202896c20d70580ae0c47ab55219915f2d

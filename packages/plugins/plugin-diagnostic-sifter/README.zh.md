@@ -25,7 +25,7 @@
 
 ## 导出形态
 
-函数/命名空间插件：导出 `name` / `inject` / `apply`，且**没有**默认导出。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢掉 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+函数/命名空间插件：导出 `name` / `inject` / `apply`，且**没有**默认导出。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢掉 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## 模型体验
 
@@ -33,7 +33,7 @@
 
 #### 模型看到什么
 
-模型看到生成的 [`run_diagnostic_check` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-diagnostic-sifter)：一个必填的 `command`（`typecheck` 或 `test`）与一个可选的 `targetPath` 字符串。插件配置（工作目录、`tsc`/`vitest` 的 argv、输出包络、超时、工具名）在加载时校验，非法值大声失败（例如空的 `tscArgs`）；它不改动任何 schema 字段，只决定运行哪个检查、如何运行。
+模型看到生成的 `run_diagnostic_check` schema：一个必填的 `command`（`typecheck` 或 `test`）与一个可选的 `targetPath` 字符串。插件配置（工作目录、`tsc`/`vitest` 的 argv、输出包络、超时、工具名）在加载时校验，非法值大声失败（例如空的 `tscArgs`）；它不改动任何 schema 字段，只决定运行哪个检查、如何运行。
 
 #### Token 影响
 

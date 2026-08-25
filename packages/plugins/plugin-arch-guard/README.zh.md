@@ -31,7 +31,7 @@
 
 #### 模型看到的内容
 
-模型看到生成的 [`check_module_boundary` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-arch-guard)：两个必填字符串输入（`sourcePath`、`targetImport`），以及结构化的 `{ allowed, rule, suggestion? }` 裁决结果输出。插件配置（`root`，默认进程 cwd）在加载时校验，不改变任何 schema 字段——只决定一次调用针对哪个工作区依赖图进行检查。
+模型看到生成的 `check_module_boundary` schema：两个必填字符串输入（`sourcePath`、`targetImport`），以及结构化的 `{ allowed, rule, suggestion? }` 裁决结果输出。插件配置（`root`，默认进程 cwd）在加载时校验，不改变任何 schema 字段——只决定一次调用针对哪个工作区依赖图进行检查。
 
 #### Token 影响
 

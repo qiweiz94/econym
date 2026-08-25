@@ -25,7 +25,7 @@ Provider 选择是**策略，而非模型的传输词汇**——模型永远不�
 
 ## 导出形态
 
-函数/命名空间插件：导出 `name` / `inject` / `apply`，且**没有**默认导出。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢掉 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+函数/命名空间插件：导出 `name` / `inject` / `apply`，且**没有**默认导出。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢掉 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## 模型体验
 
@@ -33,7 +33,7 @@ Provider 选择是**策略，而非模型的传输词汇**——模型永远不�
 
 #### 模型看到什么
 
-模型看到生成的 [`subagent` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-subagent-router)：一个必填 `description` 字符串和一个必填 `prompt` 字符串。插件配置（路由策略）在加载时校验，非法值大声失败（空的 `providers`、空的 `toolFilter`）；它不改动任何 schema 字段，只决定哪个 provider 服务该调用，或该调用是否返回一条指引性的错误结果。
+模型看到生成的 `subagent` schema：一个必填 `description` 字符串和一个必填 `prompt` 字符串。插件配置（路由策略）在加载时校验，非法值大声失败（空的 `providers`、空的 `toolFilter`）；它不改动任何 schema 字段，只决定哪个 provider 服务该调用，或该调用是否返回一条指引性的错误结果。
 
 #### Token 影响
 

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-doc-sync-automator/README.md
-README.md: cac2f1c22128ba5002e5805267817b2039006a07
-README.zh.md: 34c7e213cce09f8c615f0ad921625a330eb5c57b
+README.md: 290ad77c3ea2ec4f93b1aa01f613d5d9f4de1598
+README.zh.md: ead4ad5153a1ba2849edef0d4b2bef779082e34b

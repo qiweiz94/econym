@@ -36,7 +36,7 @@ Usage is attributed to the turn that was open when it was reported. A step that 
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -44,7 +44,7 @@ A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` a
 
 #### What the model sees
 
-The model sees the generated [`get_session_telemetry` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-telemetry-recorder): no parameters at all, and an output object whose members are documented as optional exactly where the fold can leave them absent. Plugin config (`windowTurns`) is validated at load and fails loud on a non-positive value; it changes no schema field, only how many closed turns the reported averages cover.
+The model sees the generated `get_session_telemetry` schema: no parameters at all, and an output object whose members are documented as optional exactly where the fold can leave them absent. Plugin config (`windowTurns`) is validated at load and fails loud on a non-positive value; it changes no schema field, only how many closed turns the reported averages cover.
 
 #### Token effect
 

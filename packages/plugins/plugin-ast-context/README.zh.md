@@ -19,7 +19,7 @@
 
 ## 导出形态
 
-函数／命名空间插件：导出 `name`／`inject`／`apply` 且**不**导出 default。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢弃 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+函数／命名空间插件：导出 `name`／`inject`／`apply` 且**不**导出 default。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢弃 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## 模型体验
 
@@ -27,7 +27,7 @@
 
 #### 模型看到的内容
 
-模型看到生成的 [`get_file_outline` 与 `get_directory_outline` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-ast-context)：各有一个必填的 `path` 字符串，包含 `kind`/`name`/`line`/`endLine`/`children` 的结构化 `symbols` 数组，以及目录变体的每文件 `files` 数组与 `skippedFiles` 计数。插件配置（`maxBytes` 默认 2 MiB、`maxSymbols` 默认 2,000、`maxFiles` 默认 200）在加载时校验，非法值快速失败；它不改变任何 schema 字段，只决定调用是成功解析还是返回指引性的错误结果。
+模型看到生成的 `get_file_outline` 与 `get_directory_outline` schema：各有一个必填的 `path` 字符串，包含 `kind`/`name`/`line`/`endLine`/`children` 的结构化 `symbols` 数组，以及目录变体的每文件 `files` 数组与 `skippedFiles` 计数。插件配置（`maxBytes` 默认 2 MiB、`maxSymbols` 默认 2,000、`maxFiles` 默认 200）在加载时校验，非法值快速失败；它不改变任何 schema 字段，只决定调用是成功解析还是返回指引性的错误结果。
 
 #### Token 影响
 

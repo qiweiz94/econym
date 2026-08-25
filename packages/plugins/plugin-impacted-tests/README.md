@@ -33,7 +33,7 @@ The runner's `stdout` and `stderr` each pass through the `@deepseek-ai/dsh-outpu
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -41,7 +41,7 @@ A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` a
 
 #### What the model sees
 
-The model sees the generated [`run_impacted_tests` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-impacted-tests): one optional `files` array of repo-relative paths. Plugin config (repository root, tsconfig, suite patterns, runner command, suite and byte bounds, timeout) is validated at load and fails loud on invalid values (e.g. a non-positive `maxOutputBytes`); it changes no schema field, only which suites exist and how they run.
+The model sees the generated `run_impacted_tests` schema: one optional `files` array of repo-relative paths. Plugin config (repository root, tsconfig, suite patterns, runner command, suite and byte bounds, timeout) is validated at load and fails loud on invalid values (e.g. a non-positive `maxOutputBytes`); it changes no schema field, only which suites exist and how they run.
 
 #### Token effect
 

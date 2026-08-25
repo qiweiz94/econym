@@ -25,7 +25,7 @@ Because providers can register after this plugin (sibling load order, HMR replac
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -33,7 +33,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`subagent` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-subagent-router): one required `description` string and one required `prompt` string. Plugin config (the routing policy) is validated at load and fails loud on invalid values (empty `providers`, an empty `toolFilter`); it changes no schema field, only which provider serves the call or whether the call returns a directing error result.
+The model sees the generated `subagent` schema: one required `description` string and one required `prompt` string. Plugin config (the routing policy) is validated at load and fails loud on invalid values (empty `providers`, an empty `toolFilter`); it changes no schema field, only which provider serves the call or whether the call returns a directing error result.
 
 #### Token effect
 

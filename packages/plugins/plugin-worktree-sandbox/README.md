@@ -28,7 +28,7 @@ Both the command streams and the diff are bounded at `maxOutputBytes` (default 1
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -36,7 +36,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`sandbox_exec` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-worktree-sandbox): an optional `id` string and a required `command` string. Plugin config (repository root, worktree root, base ref, envelope size, timeout, cleanup) is validated at load and fails loud on invalid values (e.g. a non-positive `maxOutputBytes`); it changes no schema field, only where and how the trial runs.
+The model sees the generated `sandbox_exec` schema: an optional `id` string and a required `command` string. Plugin config (repository root, worktree root, base ref, envelope size, timeout, cleanup) is validated at load and fails loud on invalid values (e.g. a non-positive `maxOutputBytes`); it changes no schema field, only where and how the trial runs.
 
 #### Token effect
 

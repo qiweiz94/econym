@@ -23,7 +23,7 @@
 
 ## 导出形态
 
-一个函数/命名空间插件:导出 `name` / `inject` / `apply`,且不导出 default。误加 `export default` 会在 Loader 的 `unwrapExports` 下折叠该模块并丢失 `inject`(参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md))。
+一个函数/命名空间插件:导出 `name` / `inject` / `apply`,且不导出 default。误加 `export default` 会在 Loader 的 `unwrapExports` 下折叠该模块并丢失 `inject`(参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md))。
 
 ## 模型体验
 
@@ -31,7 +31,7 @@
 
 #### 模型看到的内容
 
-模型看到生成的 [`sync_bilingual_pair` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-doc-sync-automator):一个必填的 `docPath` 字符串,以及一个必填的 `updatedSection` 对象,内含 `heading` 字符串。插件配置(仓库根目录、预算清单路径、工具名)在加载时校验;它不改变任何 schema 字段,只决定工具读写的位置。
+模型看到生成的 `sync_bilingual_pair` schema:一个必填的 `docPath` 字符串,以及一个必填的 `updatedSection` 对象,内含 `heading` 字符串。插件配置(仓库根目录、预算清单路径、工具名)在加载时校验;它不改变任何 schema 字段,只决定工具读写的位置。
 
 #### Token 影响
 

@@ -19,7 +19,7 @@ The outline is a pure function of file text: top-level `function`/`class`/`inter
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -27,7 +27,7 @@ A function/namespace plugin: it exports `name` / `inject` / `apply` and NO defau
 
 #### What the model sees
 
-The model sees the generated [`get_file_outline` and `get_directory_outline` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-ast-context): one required `path` string each, the structured `symbols` array of `kind`/`name`/`line`/`endLine`/`children`, and the directory variant's per-file `files` array and `skippedFiles` count. Plugin config (`maxBytes` default 2 MiB, `maxSymbols` default 2,000, `maxFiles` default 200) is validated at load and fails loud on invalid values; it changes no schema field, only whether a call resolves or returns a directing error result.
+The model sees the generated `get_file_outline` and `get_directory_outline` schemas: one required `path` string each, the structured `symbols` array of `kind`/`name`/`line`/`endLine`/`children`, and the directory variant's per-file `files` array and `skippedFiles` count. Plugin config (`maxBytes` default 2 MiB, `maxSymbols` default 2,000, `maxFiles` default 200) is validated at load and fails loud on invalid values; it changes no schema field, only whether a call resolves or returns a directing error result.
 
 #### Token effect
 

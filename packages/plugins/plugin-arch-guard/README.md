@@ -31,7 +31,7 @@ The rules are read off the repository's own constraint tooling and stated conven
 
 #### What the model sees
 
-The model sees the generated [`check_module_boundary` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-arch-guard): two required strings (`sourcePath`, `targetImport`) in, and the structured `{ allowed, rule, suggestion? }` verdict out. Plugin config (`root`, default the process cwd) is validated at load and changes no schema field — only which workspace graph a call is checked against.
+The model sees the generated `check_module_boundary` schema: two required strings (`sourcePath`, `targetImport`) in, and the structured `{ allowed, rule, suggestion? }` verdict out. Plugin config (`root`, default the process cwd) is validated at load and changes no schema field — only which workspace graph a call is checked against.
 
 #### Token effect
 

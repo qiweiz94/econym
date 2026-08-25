@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-worktree-sandbox/README.md
-README.md: fcc32e2aca09a885f650fdf175971a331d48c237
-README.zh.md: 5c8385d28d7628400b4bc11b66b4a921bb03a29a
+README.md: 03d9914271877af07606db4686b59c2dea2d1256
+README.zh.md: 1f82886558fef98ec6f419617b8ce74c399fd478

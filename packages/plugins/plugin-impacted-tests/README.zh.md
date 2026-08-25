@@ -33,7 +33,7 @@
 
 ## 导出形态
 
-这是函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且**没有** default。多余的 `export default` 会让模块被 Loader 的 `unwrapExports` 折叠并丢失 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+这是函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且**没有** default。多余的 `export default` 会让模块被 Loader 的 `unwrapExports` 折叠并丢失 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## Model Experience
 
@@ -41,7 +41,7 @@
 
 #### What the model sees
 
-模型看到生成的 [`run_impacted_tests` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-impacted-tests)：一个可选的 `files` 数组，元素为仓库相对路径。插件配置（仓库根、tsconfig、套件模式、运行器命令、套件数与字节上界、超时）在加载时校验，遇到非法值即失败（例如非正的 `maxOutputBytes`）；它不改变 schema 的任何字段，只改变存在哪些套件以及它们如何运行。
+模型看到生成的 `run_impacted_tests` schema：一个可选的 `files` 数组，元素为仓库相对路径。插件配置（仓库根、tsconfig、套件模式、运行器命令、套件数与字节上界、超时）在加载时校验，遇到非法值即失败（例如非正的 `maxOutputBytes`）；它不改变 schema 的任何字段，只改变存在哪些套件以及它们如何运行。
 
 #### Token effect
 

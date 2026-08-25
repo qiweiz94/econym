@@ -34,7 +34,7 @@
 
 ## 导出形态
 
-函数／命名空间插件：导出 `name`／`inject`／`apply` 且**不**导出 default。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢弃 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+函数／命名空间插件：导出 `name`／`inject`／`apply` 且**不**导出 default。多余的 `export default` 会被 Loader 的 `unwrapExports` 折叠并丢弃 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## 模型体验
 
@@ -42,7 +42,7 @@
 
 #### 模型看到的内容
 
-模型看到生成的 [`patch_symbol_body` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-semantic-patcher)：三个必填字符串（`path`、`symbol`、`newBody`），以及由 `path`/`symbol`/`kind`/`line`/`endLine` 组成的结构化结果。插件配置（`cwd`、`maxBytes` 默认 2 MiB）在加载时校验，非法值快速失败；它不改变任何 schema 字段，只决定调用是成功解析还是返回指引性的错误结果。
+模型看到生成的 `patch_symbol_body` schema：三个必填字符串（`path`、`symbol`、`newBody`），以及由 `path`/`symbol`/`kind`/`line`/`endLine` 组成的结构化结果。插件配置（`cwd`、`maxBytes` 默认 2 MiB）在加载时校验，非法值快速失败；它不改变任何 schema 字段，只决定调用是成功解析还是返回指引性的错误结果。
 
 #### Token 影响
 
