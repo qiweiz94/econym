@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-cost-ledger",
   "description": "get_cost_ledger tool: per-model token and estimated-USD accounting folded from the session log, with JSONL export for FinOps pipelines",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "publishConfig": {
     "access": "public"
   },

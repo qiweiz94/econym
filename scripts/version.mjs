@@ -26,7 +26,7 @@ if (!version || !/^\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$/.test(version)) {
 }
 
 const dirs = [
-  ...['arch-guard', 'ast-context', 'diagnostic-sifter', 'doc-sync-automator', 'impacted-tests',
+  ...['arch-guard', 'ast-context', 'cost-ledger', 'diagnostic-sifter', 'doc-sync-automator', 'impacted-tests',
     'pinned-scratchpad', 'semantic-patcher', 'subagent-router', 'telemetry-recorder', 'worktree-sandbox']
     .map(p => `packages/plugins/plugin-${p}`),
   'packages/guard/budget-governor',
