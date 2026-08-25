@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-subagent-router",
   "description": "subagent tool: config-owned policy routing of delegation to a capable subagent provider",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.0-rc.9",
   "publishConfig": {
     "access": "public"
   },

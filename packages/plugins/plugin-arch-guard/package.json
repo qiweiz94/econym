@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-arch-guard",
   "description": "check_module_boundary tool: validate a proposed import against the monorepo's package-layering rules",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.0-rc.9",
   "publishConfig": {
     "access": "public"
   },
