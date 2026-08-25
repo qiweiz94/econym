@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-diagnostic-sifter",
   "description": "run_diagnostic_check tool: sifted typecheck/test diagnostics — root causes only, cascades suppressed, bounded output",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "publishConfig": {
     "access": "public"
   },

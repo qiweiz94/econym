@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-budget-governor",
   "description": "circuit breaker for runaway delegated child agent runs: configured token, tool-failure, and edit-churn ceilings terminate a tripped child through its agent's cancellation seam and report why to the parent",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "publishConfig": {
     "access": "public"
   },
