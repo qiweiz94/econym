@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-worktree-sandbox",
   "description": "sandbox_exec tool: isolated git-worktree trial runs with bounded structured diffs",
-  "version": "0.1.0-rc.6",
+  "version": "0.1.0-rc.7",
   "publishConfig": {
     "access": "public"
   },

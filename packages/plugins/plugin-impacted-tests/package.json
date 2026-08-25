@@ -1,7 +1,7 @@
 {
   "name": "@econym/dsh-plugin-impacted-tests",
   "description": "run_impacted_tests tool: reverse import-DAG selection of the test suites a change can break",
-  "version": "0.1.0-rc.6",
+  "version": "0.1.0-rc.7",
   "publishConfig": {
     "access": "public"
   },
