@@ -16,7 +16,7 @@ import { defineTool, type ValueSchemaSpec } from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
 import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import { foldLedger } from './ledger.ts'
-import { resolveModelPricing } from './pricing.ts'
+import { DEEPSEEK_PEAK_HOURS, pricingForTime, resolveModelPricing } from './pricing.ts'
 import type { CostLedgerExportLine, LedgerSnapshot, ModelPricing } from './types.ts'
 
 export type * from './types.ts'
@@ -40,21 +40,47 @@ export interface Config {
    * exported position. Parent-only: child-run rollup arrives separately.
    */
   exportPath?: string
+  /**
+   * UTC hour windows during which peak rates apply, as `[startHour, endHour)`
+   * pairs. Defaults to DeepSeek's published peak windows (01:00-04:00 and
+   * 06:00-10:00 UTC). A model with a `peak` block in its rate entry bills those
+   * rates inside the windows and its base (off-peak) rates outside; models
+   * without a `peak` block bill base rates at all hours.
+   */
+  peakHours?: Array<[number, number]>
   /** Model-facing tool name; defaults to `get_cost_ledger`. */
   toolName?: string
 }
 
-/** Runtime configuration schema for the cost-ledger plugin. */
-export const Config: z<Config> = z.object({
-  pricing: z.dict(z.object({
-    input: z.number().min(0),
-    output: z.number().min(0),
-    cacheRead: z.number().min(0),
-    cacheWrite: z.number().min(0),
-  })),
-  exportPath: z.string(),
-  toolName: z.string().default('get_cost_ledger'),
+const RATES_SCHEMA = z.object({
+  input: z.number().min(0).required(),
+  output: z.number().min(0).required(),
+  cacheRead: z.number().min(0).default(undefined as unknown as number),
+  cacheWrite: z.number().min(0).default(undefined as unknown as number),
 })
+
+/** One pricing entry, matching {@link ModelPricing}; `peak` and the cache fields stay optional. */
+const PRICING_ENTRY_SCHEMA = z.object({
+  input: z.number().min(0).required(),
+  output: z.number().min(0).required(),
+  cacheRead: z.number().min(0).default(undefined as unknown as number),
+  cacheWrite: z.number().min(0).default(undefined as unknown as number),
+  // Preserve omission; Schemastery's `.set()` would force a required peak.
+  peak: RATES_SCHEMA.default(undefined as unknown as {
+    input: number
+    output: number
+    cacheRead: number
+    cacheWrite: number
+  }),
+})
+
+/** Runtime configuration schema for the cost-ledger plugin. */
+export const Config = z.object({
+  pricing: z.dict(PRICING_ENTRY_SCHEMA),
+  exportPath: z.string(),
+  peakHours: z.array(z.tuple([z.number().min(0).max(24), z.number().min(0).max(24)] as const)),
+  toolName: z.string().default('get_cost_ledger'),
+}) as unknown as z<Config>
 
 const SNAPSHOT_SCHEMA = {
   type: 'object',
@@ -189,7 +215,8 @@ export function apply(ctx: Context, config: Config = {}): void {
         throw new Error('get_cost_ledger needs the calling agent; this call arrived without one')
       }
       const session: Session = agent.session
-      const snapshot = foldLedger(session.events, config.pricing)
+      const peakHours = config.peakHours ?? DEEPSEEK_PEAK_HOURS
+      const snapshot = foldLedger(session.events, config.pricing, peakHours)
 
       let exportedLines: number | undefined
       if (config.exportPath !== undefined) {
@@ -200,12 +227,13 @@ export function apply(ctx: Context, config: Config = {}): void {
           const usage = event.data.usage!
           const source = event.data.message.source as { kind: 'model'; provider: string; model: string }
           const pricing = resolveModelPricing(source.model, config.pricing)
-          const cost = pricing === undefined
+          const eff = pricing === undefined ? undefined : pricingForTime(pricing, event.time, peakHours)
+          const cost = eff === undefined
             ? null
-            : Math.round(((usage.inputTokens * pricing.input
-              + usage.outputTokens * pricing.output
-              + (usage.cacheReadTokens ?? 0) * (pricing.cacheRead ?? pricing.input)
-              + (usage.cacheWriteTokens ?? 0) * (pricing.cacheWrite ?? pricing.input)) / 1_000_000) * 1e6) / 1e6
+            : Math.round(((usage.inputTokens * eff.input
+              + usage.outputTokens * eff.output
+              + (usage.cacheReadTokens ?? 0) * (eff.cacheRead ?? eff.input)
+              + (usage.cacheWriteTokens ?? 0) * (eff.cacheWrite ?? eff.input)) / 1_000_000) * 1e6) / 1e6
           const line: CostLedgerExportLine = {
             seq: event.seq,
             time: event.time,

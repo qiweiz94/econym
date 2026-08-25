@@ -1,8 +1,8 @@
 /** Per-model price table in US dollars per million tokens. */
 export interface ModelPricing {
-  /** Price for unprefixed input tokens. */
+  /** Price for unprefixed input tokens (the off-peak rate when {@link ModelPricing.peak} is set). */
   input: number
-  /** Price for generated output tokens. */
+  /** Price for generated output tokens (the off-peak rate when {@link ModelPricing.peak} is set). */
   output: number
   /**
    * Price for prompt tokens served from the provider cache; defaults to
@@ -12,6 +12,20 @@ export interface ModelPricing {
   cacheRead?: number
   /** Price for prompt tokens written into the provider cache; defaults to {@link ModelPricing.input}. */
   cacheWrite?: number
+  /**
+   * Peak-hour rates (as dollar-per-million overrides of the base fields),
+   * applied to usage events whose timestamp falls inside a configured peak
+   * window. Providers that bill time-of-day (e.g. DeepSeek's peak schedule)
+   * set this; a model without a `peak` block is billed at its base rates
+   * regardless of the hour. Every token type defaults to its base value when
+   * absent, matching the base entry's fallback chain.
+   */
+  peak?: {
+    input: number
+    output: number
+    cacheRead?: number
+    cacheWrite?: number
+  }
 }
 
 /** Token and cost accounting attributed to one provider/model pair. */

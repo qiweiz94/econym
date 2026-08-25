@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plugins/plugin-cost-ledger/README.md
-README.md: 11e827db2f8460ee4e3efe4825218804179372fc
-README.zh.md: 84c6b767aad496c3f9992325f92d759961b6c5e7
+README.md: 9cf654fd89ba709970d8f1dbf05eb49c7bfa2d8d
+README.zh.md: cd112fc0d62b138f6ead6762641cb316d87776d2

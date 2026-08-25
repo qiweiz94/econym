@@ -6,7 +6,7 @@ The model-facing `get_cost_ledger` tool: per-provider/model token and estimated-
 
 ## What it does
 
-The ledger attributes every committed `assistant/message` usage record to the provider/model pair that produced it (`message.source`), counts the token breakdown (input, output, cache read, cache write, reasoning), and prices it against a rate table. The fold is **derived, never stored**: the tool re-reads the session log every call, so a harness restart recomputes the same numbers with no checkpoint.
+The ledger attributes every committed `assistant/message` usage record to the provider/model pair that produced it (`message.source`), counts the token breakdown (input, output, cache read, cache write, reasoning), and prices it against a rate table. Each event is priced at its own timestamp, so a session that straddles peak and off-peak hours bills each step at the rate that applied when it ran. The fold is **derived, never stored**: the tool re-reads the session log every call, so a harness restart recomputes the same numbers with no checkpoint.
 
 ## Config
 
@@ -20,9 +20,13 @@ The ledger attributes every committed `assistant/message` usage record to the pr
         cacheRead: 0.05
         cacheWrite: 0.1
     exportPath: /var/log/dsh/cost-ledger.jsonl
+    peakHours:
+      - [1, 4]
+      - [6, 10]
 ```
 
-- `pricing` — per-model rates in **US dollars per million tokens**, layered over the built-in catalog table (the DeepSeek-harness `opencode-go` catalog's published rates). A model covered by neither is counted but reported with a `null` cost — an estimate is never invented.
+- `pricing` — per-model rates in **US dollars per million tokens**, layered over the built-in catalog table (the DeepSeek-harness `opencode-go` catalog's published rates). A model covered by neither is counted but reported with a `null` cost — an estimate is never invented. A rate entry may carry a `peak` block (`{ input, output, cacheRead?, cacheWrite? }`); when present, those rates bill during peak hours and the base rates outside them. Models without a `peak` block bill base rates at all hours.
+- `peakHours` — UTC hour windows `[start, end)` during which peak rates apply; defaults to DeepSeek's published schedule (01:00-04:00 and 06:00-10:00 UTC). Set an empty list to disable peak pricing.
 - `exportPath` — when set, every priced assistant step past the last exported position is appended as one JSONL line, addressed by durable `seq`. Lines are written with owner-only permissions.
 
 ## Output
@@ -33,6 +37,7 @@ The ledger attributes every committed `assistant/message` usage record to the pr
 
 - **Parent-only accounting** — the ledger folds the calling session's own log. Child-run rollup (attributing a subagent's spend to its delegating parent) is a separate, deferred step that reuses the `subagent/start` pattern from `dsh-budget-governor`.
 - **Estimates, not invoices** — cost is tokens × published rates. Provider-specific discounts, promotions, or negotiated tiers are not reflected; treat the figure as an upper-bound estimate.
+- **Peak pricing is time-of-day only** — DeepSeek's published peak schedule is fixed in the built-in catalog and overridable via `peakHours`; a rate change mid-session reprices from that point. Cached-input pricing (cache-read at ~3% of miss on DeepSeek V4) is applied per event from its `cacheReadTokens`.
 - **Pricing is per model, not per provider** — a model id shared across routes prices identically; provide a config override if two routes differ.
 - **No cache of the fold** — every call re-scans the session log; for very large sessions this is O(log length) per call. A projection-based checkpoint is deferred.
 - **JSONL export is in-memory-watermarked** — the last-exported seq resets on harness restart, so a restarted process re-exports the whole log once. Idempotent by design (lines are addressed by seq), but a durable watermark is deferred.
