@@ -3,7 +3,8 @@
  * It tracks every locally published subagent run announced by
  * `subagent/start`, watches the child session's own events for configured
  * ceilings — cumulative token growth, consecutive tool failures, same-file
- * edit churn. In the default `enforce` mode a tripped run is terminated
+ * edit churn, identical-call repetition. In the default `enforce` mode a
+ * tripped run is terminated
  * through the child Agent's public cancellation seam (`cancel({ kind: 'hook',
  * … })`); the aborted run settles through the ordinary delegation machinery
  * (an `isError` tool result that preserves partial output). In `observe` mode
@@ -28,11 +29,11 @@ import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { SubagentRunInfo } from '@deepseek-ai/dsh-subagent'
 // Type-only: declares `ctx.tokenMeter` for the injected measurement service.
 import type {} from '@deepseek-ai/dsh-token-meter'
-import { ConsecutiveFailureCounter, EditChurnWindow } from './detectors.ts'
-import type { EditChurnConfig } from './types.ts'
+import { ConsecutiveFailureCounter, EditChurnWindow, RepetitionWindow } from './detectors.ts'
+import type { EditChurnConfig, RepetitionConfig } from './types.ts'
 
-export type { EditChurnConfig, EditToolSpec } from './types.ts'
-export { ConsecutiveFailureCounter, EditChurnWindow } from './detectors.ts'
+export type { EditChurnConfig, EditToolSpec, RepetitionConfig } from './types.ts'
+export { ConsecutiveFailureCounter, EditChurnWindow, RepetitionWindow } from './detectors.ts'
 
 export const name = 'budget-governor'
 export const inject = ['subagents', 'agents', 'tokenMeter']
@@ -61,6 +62,11 @@ export interface Config {
   maxConsecutiveToolFailures?: number
   /** Flag a child run that keeps re-editing one file (see {@link EditChurnConfig}). */
   editChurn?: EditChurnConfig
+  /**
+   * Flag a child run that repeats one tool call with identical arguments
+   * (see {@link RepetitionConfig}).
+   */
+  repetition?: RepetitionConfig
 }
 
 /**
@@ -80,10 +86,15 @@ export const Config: z<Config> = z.object({
       pathArgument: z.string().required(),
     })).required(),
   }).default(undefined as unknown as EditChurnConfig),
+  // Preserve omission; a materialized `{}` would read as a half-configured ceiling.
+  repetition: z.object({
+    maxRepeats: z.number().required(),
+    window: z.number().required(),
+  }).default(undefined as unknown as RepetitionConfig),
 })
 
 /** The ceiling vocabulary used in the report's one-line summary. */
-type CeilingKind = 'token ceiling' | 'consecutive tool failures' | 'file edit churn'
+type CeilingKind = 'token ceiling' | 'consecutive tool failures' | 'file edit churn' | 'tool repetition loop'
 
 /** Validated configuration with the edit-tool list folded into a lookup map. */
 interface ResolvedConfig {
@@ -95,6 +106,10 @@ interface ResolvedConfig {
     readonly window: number
     /** Edit tool name → path argument key. */
     readonly tools: ReadonlyMap<string, string>
+  }
+  readonly repetition?: {
+    readonly maxRepeats: number
+    readonly window: number
   }
 }
 
@@ -114,10 +129,10 @@ function requireInteger(field: string, value: number, min: number): number {
  */
 export function resolveConfig(config: Config): ResolvedConfig {
   if (config.maxChildTokens === undefined && config.maxConsecutiveToolFailures === undefined
-    && config.editChurn === undefined) {
+    && config.editChurn === undefined && config.repetition === undefined) {
     throw new Error(
       'budget-governor: no ceiling is configured — set at least one of '
-      + '`maxChildTokens`, `maxConsecutiveToolFailures`, or `editChurn`, or remove the plugin',
+      + '`maxChildTokens`, `maxConsecutiveToolFailures`, `editChurn`, or `repetition`, or remove the plugin',
     )
   }
   const resolved: {
@@ -125,6 +140,7 @@ export function resolveConfig(config: Config): ResolvedConfig {
     maxChildTokens?: number
     maxConsecutiveToolFailures?: number
     editChurn?: { maxSameFileEdits: number; window: number; tools: ReadonlyMap<string, string> }
+    repetition?: { maxRepeats: number; window: number }
   } = { mode: config.mode ?? 'enforce' }
   if (config.maxChildTokens !== undefined) {
     resolved.maxChildTokens = requireInteger('maxChildTokens', config.maxChildTokens, 1)
@@ -160,6 +176,18 @@ export function resolveConfig(config: Config): ResolvedConfig {
     }
     resolved.editChurn = { maxSameFileEdits, window, tools }
   }
+  if (config.repetition !== undefined) {
+    const repetition = config.repetition
+    const maxRepeats = requireInteger('repetition.maxRepeats', repetition.maxRepeats, 2)
+    const window = requireInteger('repetition.window', repetition.window, 2)
+    if (window < maxRepeats) {
+      throw new Error(
+        `budget-governor: repetition.window ${window} is smaller than `
+        + `repetition.maxRepeats ${maxRepeats} — that ceiling could never trip`,
+      )
+    }
+    resolved.repetition = { maxRepeats, window }
+  }
   return resolved
 }
 
@@ -169,6 +197,7 @@ interface RunState {
   readonly child: Agent
   failures?: ConsecutiveFailureCounter
   churn?: EditChurnWindow
+  repetition?: RepetitionWindow
   /** In-flight call id → tool name, kept only for failure-report evidence. */
   pendingCalls?: Map<CallId, string>
   /**
@@ -197,6 +226,11 @@ function armRun(run: RunState, resolved: ResolvedConfig): void {
   } else {
     run.churn = new EditChurnWindow(resolved.editChurn.maxSameFileEdits, resolved.editChurn.window)
   }
+  if (resolved.repetition === undefined) {
+    delete run.repetition
+  } else {
+    run.repetition = new RepetitionWindow(resolved.repetition.maxRepeats, resolved.repetition.window)
+  }
 }
 
 /** Parse the model's raw argument JSON and extract one string-valued path argument. */
@@ -212,6 +246,22 @@ function extractPath(rawArguments: string, pathArgument: string): string | undef
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
   const value = (parsed as Record<string, unknown>)[pathArgument]
   return typeof value === 'string' ? value : undefined
+}
+
+/**
+ * Build the exact-repeat fingerprint of one tool call: the tool name plus its
+ * full argument JSON, normalized by re-serializing so key order and whitespace
+ * differences do not split an otherwise identical call.
+ */
+function fingerprint(name: string, rawArguments: string): string {
+  try {
+    return `${name}\u0000${JSON.stringify(JSON.parse(rawArguments))}`
+  } catch {
+    // Malformed argument JSON (which would fail at the tool boundary anyway)
+    // fingerprints by its raw text — the repetition detector still sees a loop
+    // that re-issues the identical malformed call.
+    return `${name}\u0000${rawArguments}`
+  }
 }
 
 /** The model-visible report injected into the parent agent when a ceiling trips. */
@@ -283,14 +333,23 @@ export function apply(ctx: Context, config: Config): void {
       case 'tool/call': {
         run.pendingCalls?.set(event.data.callId, event.data.name)
         const churnConfig = resolved.editChurn
-        if (run.churn === undefined || churnConfig === undefined) return
-        const pathArgument = churnConfig.tools.get(event.data.name)
-        if (pathArgument === undefined) return
-        const path = extractPath(event.data.arguments, pathArgument)
-        if (path !== undefined && run.churn.observe(path)) {
-          trip(run, session, 'file edit churn',
-            `${run.churn.current} edits to ${path} within the last ${churnConfig.window} `
-            + `edit-tool calls (ceiling ${churnConfig.maxSameFileEdits})`)
+        if (run.churn !== undefined && churnConfig !== undefined) {
+          const pathArgument = churnConfig.tools.get(event.data.name)
+          if (pathArgument !== undefined) {
+            const path = extractPath(event.data.arguments, pathArgument)
+            if (path !== undefined && run.churn.observe(path)) {
+              trip(run, session, 'file edit churn',
+                `${run.churn.current} edits to ${path} within the last ${churnConfig.window} `
+                + `edit-tool calls (ceiling ${churnConfig.maxSameFileEdits})`)
+            }
+          }
+        }
+        const repetitionConfig = resolved.repetition
+        if (run.repetition !== undefined && repetitionConfig !== undefined
+          && run.repetition.observe(fingerprint(event.data.name, event.data.arguments))) {
+          trip(run, session, 'tool repetition loop',
+            `${run.repetition.current} identical calls to "${event.data.name}" within the last `
+            + `${repetitionConfig.window} tool calls (ceiling ${repetitionConfig.maxRepeats})`)
         }
         return
       }

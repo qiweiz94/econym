@@ -11,8 +11,9 @@
 - **`maxChildTokens`** —— 在子会话每次 `assistant/message` 时，将 `ctx.tokenMeter.measure(childSession).totalTokens` 与上限比较。这衡量的是本框架用来给上下文定价的、面向模型可见的请求面，而不是供应商计费的累计花费。
 - **`maxConsecutiveToolFailures`** —— 子会话中一次面向模型的结果块带有 `isError: true` 的 `tool/result` 会使每次运行的计数器加一；任何非错误结果都会将计数器重置为零，因此一个恢复正常的运行永远不会因其历史记录而被终止。
 - **`editChurn`** —— `{ maxSameFileEdits, window, tools: [{ name, pathArgument }] }`。子会话中每一次指向已配置编辑工具的 `tool/call`，都会将其提取出的路径参数计入该运行最近 `window` 次编辑调用组成的有界滑动窗口；当某一路径在该窗口内累计达到 `maxSameFileEdits` 次时，上限被触发。移出窗口的编辑不再计数。
+- **`repetition`** —— `{ maxRepeats, window }`。子会话中每一次 `tool/call` 都会将其指纹（工具名 + 规范化后的参数 JSON）计入该运行最近 `window` 次工具调用组成的有界滑动窗口；当某一次完全相同的调用在该窗口内累计达到 `maxRepeats` 次时，上限被触发。这会捕获 churn 检测器忽略的、会烧掉 token 的循环 —— 例如反复读取同一文件、反复执行同一搜索、永不推进的状态探测。同一工具的不同参数永远不会匹配，移出窗口的调用不再计数。
 
-三个上限均为可选，但至少必须配置一个 —— 一个完全没有配置任何上限的治理器属于错误配置，会在插件加载时直接失败并报错。
+四个上限均为可选，但至少必须配置一个 —— 一个完全没有配置任何上限的治理器属于错误配置，会在插件加载时直接失败并报错。
 
 **`mode`** —— `enforce`（默认）通过子代理 `Agent` 的取消接缝取消触发上限的子运行；`observe` 让运行继续，仅报告被越过的上限。用 `observe` 可在让治理器介入之前测量上限触发的频率。每次转轮最多报告一次，并在下一次转轮重新武装，因此可继续子代理在其父级后续跟进中仍受治理（目前尚无已上线的组合创建可继续的受治理子代理；重新武装是前瞻性的）。
 
@@ -28,9 +29,12 @@
       window: 10
       tools:
         - { name: edit, pathArgument: file_path }
+    repetition:
+      maxRepeats: 4
+      window: 12
 ```
 
-每个已配置的字段都在加载时被校验：上限必须是范围内的整数（`maxChildTokens >= 1`、`maxConsecutiveToolFailures >= 1`、`editChurn.maxSameFileEdits >= 2`、`editChurn.window >= 2`），`editChurn.window` 必须不小于 `editChurn.maxSameFileEdits`（更小的窗口永远不可能触发），且 `editChurn.tools` 必须非空，其中的 `name`/`pathArgument` 必须非空且不重复。编辑工具名称和路径参数键属于部署相关的词汇，而不是硬编码常量 —— 本仓库的 `dsh-tool-fs` 使用 `edit`/`file_path`，而 MCP 或 ACP 工具集的命名可能不同。
+每个已配置的字段都在加载时被校验：上限必须是范围内的整数（`maxChildTokens >= 1`、`maxConsecutiveToolFailures >= 1`、`editChurn.maxSameFileEdits >= 2`、`editChurn.window >= 2`、`repetition.maxRepeats >= 2`、`repetition.window >= 2`），每个有界窗口必须不小于其对应的上限（更小的窗口永远不可能触发），且 `editChurn.tools` 必须非空，其中的 `name`/`pathArgument` 必须非空且不重复。编辑工具名称和路径参数键属于部署相关的词汇，而不是硬编码常量 —— 本仓库的 `dsh-tool-fs` 使用 `edit`/`file_path`，而 MCP 或 ACP 工具集的命名可能不同。repetition 检测器无需工具列表：它观察每一次 `tool/call`，并且只有完全相同的重复（工具 + 相同参数）才算数。
 
 ## 执行方式
 
@@ -44,7 +48,7 @@
 
 ## 导出形态
 
-这是一个函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且没有默认导出。误加 `export default` 会导致 Loader 的 `unwrapExports` 折叠该模块并丢失 `inject`（参见 [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)）。
+这是一个函数/命名空间插件：导出 `name` / `inject` / `Config` / `apply`，且没有默认导出。误加 `export default` 会导致 Loader 的 `unwrapExports` 折叠该模块并丢失 `inject`（参见 [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)）。
 
 ## 模型体验
 
@@ -74,6 +78,7 @@ The delegation's tool result reports the cancellation and preserves any partial 
 ## 已知限制与推迟事项
 
 - **不治理远程运行。** `local: false` 的 `subagent/start`（例如 ACP 提供方）既不暴露可取消的本地 `Agent`，也不追加可观察的本地会话事件；治理器会静默跳过这些运行。若要跨越 ACP 边界扩展治理能力，需要在提供方接口上新增远程取消能力。
-- **Token 上限限制的是上下文面，而不是计费花费。** 一个通过大量重复短请求消耗 token 的子运行，会触发失败或编辑抖动上限，而不是 token 上限。
+- **Token 上限限制的是上下文面，而不是计费花费。** 一个通过大量重复短请求消耗 token 的子运行，会触发失败、编辑抖动或重复调用上限，而不是 token 上限。
+- **重复检测只匹配完全相同的调用。** `repetition` 检测器以工具名加规范化后的参数 JSON 作为指纹，因此每次迭代都改变一个参数的循环（例如不断递增的分页游标）不会匹配 —— 此类循环交由失败或 token 上限处理。
 - **本包未附带无密钥快照示例。** 终止报告文本由单元测试和 Loader 组合测试逐字校验；将受治理委托示例接入快照测试框架的工作被推迟。
 - **根代理从不受治理**，这是有意为之：只有由子代理生命周期事件宣告的会话才会被跟踪，而根会话从不在其中被宣告。

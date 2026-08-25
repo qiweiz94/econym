@@ -11,8 +11,9 @@ For every **local** child run announced by `subagent/start` (`info.local === tru
 - **`maxChildTokens`** — at each child `assistant/message`, `ctx.tokenMeter.measure(childSession).totalTokens` is compared against the ceiling. This is the model-visible request surface the harness itself prices context with, not provider-billed cumulative spend.
 - **`maxConsecutiveToolFailures`** — a child `tool/result` whose model-facing block has `isError: true` increments a per-run counter; any non-error result resets it to zero, so a run that recovers is never terminated for its history.
 - **`editChurn`** — `{ maxSameFileEdits, window, tools: [{ name, pathArgument }] }`. Each child `tool/call` naming a configured edit tool contributes its extracted path argument to a bounded sliding window of the run's most recent `window` edit calls; the ceiling trips when one path accounts for `maxSameFileEdits` entries within that window. Edits that fall out of the window stop counting.
+- **`repetition`** — `{ maxRepeats, window }`. Every child `tool/call` contributes a fingerprint (tool name + normalized argument JSON) to a bounded sliding window of the run's most recent `window` tool calls; the ceiling trips when one identical call accounts for `maxRepeats` entries within that window. This catches token-burning loops on tools churn ignores — a file re-read, a search, a status probe that never advances. Distinct arguments to the same tool never match, and calls that fall out of the window stop counting.
 
-All three ceilings are optional, but at least one must be configured — a governor with no ceiling at all is misconfiguration and fails loud at plugin load.
+All four ceilings are optional, but at least one must be configured — a governor with no ceiling at all is misconfiguration and fails loud at plugin load.
 
 **`mode`** — `enforce` (default) cancels a tripped child run through its `Agent`'s cancellation seam; `observe` leaves the run to continue and only reports the crossed ceiling. Use `observe` to measure how often ceilings would trip before letting the governor intervene. A run reports at most once per turn and is re-armed on its next turn, so a continuable child stays governed across its parent's follow-ups (no shipped composition creates a continuable governed child yet; the re-arm is forward-looking).
 
@@ -28,9 +29,12 @@ All three ceilings are optional, but at least one must be configured — a gover
       window: 10
       tools:
         - { name: edit, pathArgument: file_path }
+    repetition:
+      maxRepeats: 4
+      window: 12
 ```
 
-Every configured field is validated at load: ceilings must be integers within range (`maxChildTokens >= 1`, `maxConsecutiveToolFailures >= 1`, `editChurn.maxSameFileEdits >= 2`, `editChurn.window >= 2`), `editChurn.window` must be at least `editChurn.maxSameFileEdits` (a smaller window could never trip), and `editChurn.tools` must be non-empty with non-empty, duplicate-free `name`/`pathArgument` pairs. The edit-tool names and path-argument keys are deployment vocabulary, not a hardcoded constant — this repo's `dsh-tool-fs` uses `edit`/`file_path`, an MCP or ACP tool set may name them differently.
+Every configured field is validated at load: ceilings must be integers within range (`maxChildTokens >= 1`, `maxConsecutiveToolFailures >= 1`, `editChurn.maxSameFileEdits >= 2`, `editChurn.window >= 2`, `repetition.maxRepeats >= 2`, `repetition.window >= 2`), each bounded window must be at least its ceiling (a smaller window could never trip), and `editChurn.tools` must be non-empty with non-empty, duplicate-free `name`/`pathArgument` pairs. The edit-tool names and path-argument keys are deployment vocabulary, not a hardcoded constant — this repo's `dsh-tool-fs` uses `edit`/`file_path`, an MCP or ACP tool set may name them differently. The repetition detector needs no tool list: it watches every `tool/call` and only exact repeats (tool + identical arguments) count.
 
 ## Enforcement
 
@@ -44,7 +48,7 @@ On termination the governor injects one structured notice into the parent agent 
 
 ## Export shape
 
-A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](../../../docs/postmortem/0001-acp-default-export-drops-inject.md)).
+A function/namespace plugin: it exports `name` / `inject` / `Config` / `apply` and NO default. A stray `export default` would collapse the module via the Loader's `unwrapExports` and drop `inject` (see [docs/postmortem/0001](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/postmortem/0001-acp-default-export-drops-inject.md)).
 
 ## Model Experience
 
@@ -74,6 +78,7 @@ Append-only; the notice follows the reusable request prefix and does not invalid
 ## Known Limitations and Deferred Work
 
 - **Remote runs are not governed.** A `subagent/start` with `local: false` (e.g. the ACP provider) exposes no local `Agent` to cancel and appends no local session events to observe; the governor silently skips those runs. Extending governance across the ACP boundary would need a remote-cancellation capability on the provider seam.
-- **The token ceiling bounds context surface, not billed spend.** A child that burns tokens on repeated short requests trips the failure or churn ceilings instead.
+- **The token ceiling bounds context surface, not billed spend.** A child that burns tokens on repeated short requests trips the failure, churn, or repetition ceilings instead.
+- **Repetition is exact-match only.** The `repetition` detector fingerprints the tool name plus normalized argument JSON, so a loop that mutates one argument each iteration (e.g. an ever-increasing pagination cursor) does not match — it is left to the failure or token ceilings.
 - **No keyless snapshot example ships in this package.** The termination report text is pinned verbatim by unit and Loader-composition tests; wiring a governed-delegation example into the snapshot harness is deferred.
 - **The root agent is never governed**, by design: only sessions announced by the subagent lifecycle events are tracked, and a root session is never announced there.

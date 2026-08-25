@@ -30,3 +30,17 @@ export interface EditChurnConfig {
   /** Non-empty, duplicate-free edit tools tracked by the detector. */
   tools: EditToolSpec[]
 }
+
+/**
+ * Identical-call repetition ceiling over a bounded window of a child run's most
+ * recent tool calls. A loop that keeps re-issuing the same tool with the same
+ * arguments (a file re-read, a search, a status probe that never advances)
+ * trips once it accounts for the ceiling of the window. The fingerprint is the
+ * tool name plus its full argument JSON, so only exact repeats count.
+ */
+export interface RepetitionConfig {
+  /** Identical calls within the window that terminate the run. Integer >= 2. */
+  maxRepeats: number
+  /** How many recent tool calls the window retains. Integer >= `maxRepeats`. */
+  window: number
+}

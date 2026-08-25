@@ -72,6 +72,24 @@ describe('resolveConfig fail-loud validation', () => {
     })).toThrow(/duplicate editChurn tool "edit"/)
   })
 
+  it('rejects repetition.maxRepeats below 2 (a run cannot repeat one call once and loop)', () => {
+    expect(() => resolveConfig({
+      repetition: { maxRepeats: 1, window: 4 },
+    })).toThrow(/invalid repetition\.maxRepeats/)
+  })
+
+  it('rejects repetition.window below 2', () => {
+    expect(() => resolveConfig({
+      repetition: { maxRepeats: 2, window: 1 },
+    })).toThrow(/invalid repetition\.window/)
+  })
+
+  it('rejects a repetition window smaller than maxRepeats (the ceiling could never trip)', () => {
+    expect(() => resolveConfig({
+      repetition: { maxRepeats: 5, window: 3 },
+    })).toThrow(/window 3 is smaller than.*maxRepeats 5/)
+  })
+
   it('accepts a fully populated multi-ceiling config and folds tools into a lookup map', () => {
     const resolved = resolveConfig({
       maxChildTokens: 1000,
@@ -81,6 +99,7 @@ describe('resolveConfig fail-loud validation', () => {
         window: 4,
         tools: [{ name: 'edit', pathArgument: 'file_path' }, { name: 'write', pathArgument: 'path' }],
       },
+      repetition: { maxRepeats: 3, window: 6 },
     })
     expect(resolved.maxChildTokens).toBe(1000)
     expect(resolved.maxConsecutiveToolFailures).toBe(3)
@@ -88,5 +107,7 @@ describe('resolveConfig fail-loud validation', () => {
     expect(resolved.editChurn?.window).toBe(4)
     expect(resolved.editChurn?.tools.get('edit')).toBe('file_path')
     expect(resolved.editChurn?.tools.get('write')).toBe('path')
+    expect(resolved.repetition?.maxRepeats).toBe(3)
+    expect(resolved.repetition?.window).toBe(6)
   })
 })

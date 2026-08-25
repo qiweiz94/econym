@@ -1,8 +1,9 @@
 /**
- * Per-run detector state machines for the budget governor. Both detectors can
- * clear: a successful tool call resets the failure run, and edits leaving the
- * bounded window stop counting toward churn. The engine in `./index.ts` owns
- * when they are fed and what a trip does.
+ * Per-run detector state machines for the budget governor. All detectors can
+ * clear: a successful tool call resets the failure run, edits leaving the
+ * bounded window stop counting toward churn, and a repeated call leaving the
+ * window stops counting toward the repetition loop. The engine in `./index.ts`
+ * owns when they are fed and what a trip does.
  *
  * @module @econym/dsh-budget-governor/detectors
  */
@@ -64,6 +65,44 @@ export class EditChurnWindow {
   }
 
   /** The same-file count computed by the last {@link observe}, for termination reports. */
+  get current(): number {
+    return this.tripCount
+  }
+}
+
+/**
+ * Bounded sliding window over one child run's most recent tool calls, counting
+ * how many are identical — the same tool invoked with exactly the same
+ * arguments. A loop that keeps re-issuing one call (a file re-read, a search,
+ * a status check that never advances) repeats that fingerprint and trips once
+ * it accounts for the ceiling of the window. Entries older than the window
+ * fall out, so steady progress across distinct calls never trips. This covers
+ * tools the edit-churn detector ignores (reads, searches, probes), which is
+ * where token-burning loops most often hide.
+ */
+export class RepetitionWindow {
+  private readonly recent: string[] = []
+  private tripCount = 0
+
+  /**
+   * @param ceiling - identical calls within the window that constitute a loop.
+   * @param window - how many recent tool calls are retained.
+   */
+  constructor(private readonly ceiling: number, private readonly window: number) {}
+
+  /**
+   * Record one tool call by its exact fingerprint.
+   * @param fingerprint - the tool name plus its full argument JSON.
+   * @returns whether the fingerprint now accounts for at least the ceiling of the window.
+   */
+  observe(fingerprint: string): boolean {
+    this.recent.push(fingerprint)
+    if (this.recent.length > this.window) this.recent.shift()
+    this.tripCount = this.recent.filter(entry => entry === fingerprint).length
+    return this.tripCount >= this.ceiling
+  }
+
+  /** The identical-call count computed by the last {@link observe}, for termination reports. */
   get current(): number {
     return this.tripCount
   }

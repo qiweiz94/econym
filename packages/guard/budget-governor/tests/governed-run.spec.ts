@@ -286,6 +286,50 @@ describe('budget-governor real in-process termination', () => {
     await run.dispose()
   })
 
+  it('terminates a run whose identical-call repetition reaches the ceiling', async () => {
+    const { context, parent } = await setup(
+      [
+        toolCallResponse('c1', 'edit', { file_path: 'a.ts', outcome: 'ok' }),
+        toolCallResponse('c2', 'edit', { file_path: 'a.ts', outcome: 'ok' }),
+        toolCallResponse('c3', 'edit', { file_path: 'a.ts', outcome: 'ok' }),
+        textResponse('unreachable'),
+        textResponse('ack'),
+      ],
+      // Note: no editChurn configured — the repetition ceiling catches the
+      // identical calls that churn (which only tracks the file path) would not.
+      { repetition: { maxRepeats: 3, window: 5 } },
+    )
+    const run = await start(context, { prompt: [{ type: 'text', text: 'child q' }], parent })
+    const result = await run.result
+    expect(result.stopReason).toBe('aborted')
+    await driveParentForward(parent)
+    const notices = terminationNotices(parent)
+    expect(notices).toHaveLength(1)
+    expect(notices[0]).toContain('3 identical calls to "edit" within the last 5 tool calls (ceiling 3)')
+    await run.dispose()
+  })
+
+  it('does NOT terminate a run whose identical calls clear out of the window', async () => {
+    const { context, parent } = await setup(
+      [
+        toolCallResponse('c1', 'edit', { file_path: 'a.ts', outcome: 'ok' }),
+        toolCallResponse('c2', 'edit', { file_path: 'b.ts', outcome: 'ok' }),
+        toolCallResponse('c3', 'edit', { file_path: 'c.ts', outcome: 'ok' }),
+        toolCallResponse('c4', 'edit', { file_path: 'd.ts', outcome: 'ok' }),
+        toolCallResponse('c5', 'edit', { file_path: 'a.ts', outcome: 'ok' }),
+        textResponse('done'),
+      ],
+      // Window 3: the two 'a.ts' calls are separated by two distinct calls, so
+      // at most one 'a.ts' ever sits in the window — never the ceiling of 3.
+      { repetition: { maxRepeats: 3, window: 3 } },
+    )
+    const run = await start(context, { prompt: [{ type: 'text', text: 'child q' }], parent })
+    const result = await run.result
+    expect(result.stopReason).toBe('completed')
+    expect(terminationNotices(parent)).toHaveLength(0)
+    await run.dispose()
+  })
+
   it('does NOT terminate a token-healthy run whose surface stays under a generous ceiling', async () => {
     const { context, parent } = await setup(
       [textResponse('a modestly sized reply')],

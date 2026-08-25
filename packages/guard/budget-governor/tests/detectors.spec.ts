@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ConsecutiveFailureCounter, EditChurnWindow } from '../src/detectors.ts'
+import { ConsecutiveFailureCounter, EditChurnWindow, RepetitionWindow } from '../src/detectors.ts'
 
 describe('ConsecutiveFailureCounter', () => {
   it('trips exactly at the configured ceiling, not before', () => {
@@ -78,6 +78,57 @@ describe('EditChurnWindow', () => {
     expect(window.observe('hot.ts')).toBe(false)
     expect(window.observe('hot.ts')).toBe(true)
     expect(window.observe('hot.ts')).toBe(true)
+    expect(window.current).toBe(3)
+  })
+})
+
+describe('RepetitionWindow', () => {
+  it('trips when one identical call accounts for the ceiling within the window', () => {
+    const window = new RepetitionWindow(3, 5)
+    const fp = 'get_file_outline\u0000{"path":"src/a.ts"}'
+    expect(window.observe(fp)).toBe(false)
+    expect(window.observe('bash\u0000{"command":"git status"}')).toBe(false)
+    expect(window.observe(fp)).toBe(false)
+    expect(window.current).toBe(2)
+    expect(window.observe(fp)).toBe(true)
+    expect(window.current).toBe(3)
+  })
+
+  it('does NOT treat different arguments to the same tool as a repeat', () => {
+    const window = new RepetitionWindow(3, 4)
+    expect(window.observe('read\u0000{"path":"a.ts"}')).toBe(false)
+    expect(window.observe('read\u0000{"path":"b.ts"}')).toBe(false)
+    expect(window.observe('read\u0000{"path":"c.ts"}')).toBe(false)
+    expect(window.current).toBe(1)
+    expect(window.observe('read\u0000{"path":"a.ts"}')).toBe(false)
+    expect(window.current).toBe(2)
+  })
+
+  it('CLEARS as older entries fall out of the bounded window', () => {
+    const window = new RepetitionWindow(3, 3)
+    const fp = 'probe\u0000{}'
+    window.observe(fp)
+    window.observe(fp)
+    // Window size 3: distinct calls displace the earlier repeats.
+    expect(window.observe('a\u0000{}')).toBe(false)
+    expect(window.observe('b\u0000{}')).toBe(false)
+    expect(window.observe('c\u0000{}')).toBe(false)
+    expect(window.current).toBe(1)
+  })
+
+  it('a known-HEALTHY round-robin across distinct calls never trips', () => {
+    const window = new RepetitionWindow(3, 4)
+    for (let i = 0; i < 40; i++) {
+      expect(window.observe(`tool\u0000{"n":${i % 4}}`)).toBe(false)
+    }
+  })
+
+  it('a known-BAD run that keeps re-issuing one call trips and stays tripped', () => {
+    const window = new RepetitionWindow(2, 4)
+    const fp = 'search\u0000{"q":"auth"}'
+    expect(window.observe(fp)).toBe(false)
+    expect(window.observe(fp)).toBe(true)
+    expect(window.observe(fp)).toBe(true)
     expect(window.current).toBe(3)
   })
 })
