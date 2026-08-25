@@ -8,6 +8,7 @@ Packages that ship one self-contained model-facing tool on `ctx.tools` without a
 |---|---|---|
 | [`plugin-arch-guard/`](plugin-arch-guard/README.md) | `check_module_boundary`: judges whether one package importing another is legal under the monorepo layering rules. | (registers on `ctx.tools`) |
 | [`plugin-ast-context/`](plugin-ast-context/README.md) | `get_file_outline` / `get_directory_outline`: tree-sitter symbol outlines of local TypeScript files and directories. | (registers on `ctx.tools`) |
+| [`plugin-cost-ledger/`](plugin-cost-ledger/README.md) | `get_cost_ledger`: per-provider/model token and estimated-USD accounting folded from the session log, with JSONL export. | (registers on `ctx.tools`) |
 | [`plugin-diagnostic-sifter/`](plugin-diagnostic-sifter/README.md) | `run_diagnostic_check`: runs typecheck or a scoped test suite and returns a bounded root-cause list with cascade noise suppressed. | (registers on `ctx.tools`) |
 | [`plugin-doc-sync-automator/`](plugin-doc-sync-automator/README.md) | `sync_bilingual_pair`: splices a changed English doc section into its .zh.md mirror and re-records the pair, keeping it gate-valid. | (registers on `ctx.tools`) |
 | [`plugin-impacted-tests/`](plugin-impacted-tests/README.md) | `run_impacted_tests`: runs only the suites reachable from changed files through the workspace import graph. | (registers on `ctx.tools`) |

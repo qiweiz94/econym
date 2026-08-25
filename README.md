@@ -18,6 +18,7 @@ Econym is a standalone collection of installable plugins for the [DeepSeek Harne
 | `@econym/dsh-plugin-impacted-tests` | `run_impacted_tests`: scopes test runs to files changed by a patch |
 | `@econym/dsh-plugin-semantic-patcher` | `patch_symbol_body`: tree-sitter-guided symbol body replacement |
 | `@econym/dsh-plugin-telemetry-recorder` | Records model/agent telemetry snapshots for downstream analytics |
+| `@econym/dsh-plugin-cost-ledger` | Per-provider/model token and estimated-USD accounting folded from the session log, with JSONL export |
 | `@econym/dsh-budget-governor` | Circuit breaker for runaway child agent runs: detects runaway token spend and cancels the child |
 
 ## Install

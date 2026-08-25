@@ -8,6 +8,7 @@
 |---|---|---|
 | [`plugin-arch-guard/`](plugin-arch-guard/README.md) | `check_module_boundary`：判断一个包导入另一个包在 monorepo 分层规则下是否合法。 | （注册于 `ctx.tools`） |
 | [`plugin-ast-context/`](plugin-ast-context/README.md) | `get_file_outline` / `get_directory_outline`：本地 TypeScript 文件与目录的 tree-sitter 符号摘要。 | （注册于 `ctx.tools`） |
+| [`plugin-cost-ledger/`](plugin-cost-ledger/README.md) | `get_cost_ledger`：按提供方/模型统计会话日志中的 token 与估算美元成本，支持 JSONL 导出。 | （注册于 `ctx.tools`） |
 | [`plugin-diagnostic-sifter/`](plugin-diagnostic-sifter/README.md) | `run_diagnostic_check`：运行类型检查或范围化测试套件，抑制级联噪音后返回有界的根因列表。 | （注册于 `ctx.tools`） |
 | [`plugin-doc-sync-automator/`](plugin-doc-sync-automator/README.md) | `sync_bilingual_pair`：把改动的英文文档小节拼接进其 .zh.md 镜像并重录该对，保持门禁有效。 | （注册于 `ctx.tools`） |
 | [`plugin-impacted-tests/`](plugin-impacted-tests/README.md) | `run_impacted_tests`：只运行经工作区导入图从改动文件可达的套件。 | （注册于 `ctx.tools`） |
