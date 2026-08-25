@@ -1,0 +1,20 @@
+{
+  "name": "@econym/bench-ast-token",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Measured token-economy benchmark for the AST-guided read path: naive full-file reads vs outline + targeted reads.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench": "tsx src/run.ts"
+  },
+  "devDependencies": {
+    "@econym/dsh-plugin-ast-context": "workspace:*",
+    "tree-sitter": "^0.25.1",
+    "tree-sitter-typescript": "^0.23.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

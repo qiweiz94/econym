@@ -1,6 +1,7 @@
 packages:
   - packages/plugins/*
   - packages/guard/*
+  - packages/bench/*
 
 # pnpm 10+ blocks any dependency shipping an install/build script until it is
 # explicitly reviewed here. tree-sitter (native bindings for the AST-context
