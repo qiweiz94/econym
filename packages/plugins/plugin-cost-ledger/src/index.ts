@@ -78,7 +78,7 @@ const PRICING_ENTRY_SCHEMA = z.object({
 export const Config = z.object({
   pricing: z.dict(PRICING_ENTRY_SCHEMA),
   exportPath: z.string(),
-  peakHours: z.array(z.tuple([z.number().min(0).max(24), z.number().min(0).max(24)] as const)),
+  peakHours: z.array(z.tuple([z.number().min(0).max(23), z.number().min(1).max(24)] as const)),
   toolName: z.string().default('get_cost_ledger'),
 }) as unknown as z<Config>
 
@@ -193,6 +193,20 @@ function usageEventsPast(session: Session, watermark: number): Array<SessionEven
  * @param config - price overrides and the optional JSONL export path.
  */
 export function apply(ctx: Context, config: Config = {}): void {
+  // Peak windows are `[startHour, endHour)` half-open UTC ranges. A window with
+  // `start >= end` (or a start outside 0-23) can never match an hour and would
+  // silently under-bill every peak step, so the plugin fails loud at load —
+  // the same stance the router takes on a malformed `toolFilter`.
+  if (config.peakHours !== undefined) {
+    for (const [start, end] of config.peakHours) {
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start > 23 || end < 1 || end > 24 || start >= end) {
+        throw new Error(
+          `plugin-cost-ledger: invalid peakHours window [${start}, ${end}) — each window must satisfy `
+          + `0 <= start < end <= 24 with integer hours (e.g. [1, 4])`,
+        )
+      }
+    }
+  }
   // One watermark per export path, process-lifetime: a restarted harness
   // re-derives the same fold, so only the in-memory cursor resets.
   const watermarks = new Map<SessionId & string, number>()

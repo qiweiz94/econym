@@ -159,4 +159,11 @@ describe('plugin-cost-ledger real Loader composition through cordis.yml', () => 
     expect(result.value.unpricedModels).toEqual(['never-heard-of-it'])
     expect(result.value.totals.estimatedCostUsd).toBeNull()
   })
+
+  it('fails loud at load on an inverted or out-of-range peakHours window', async () => {
+    // An inverted window passes the per-element schema but is rejected by apply().
+    await expect(boot(['    peakHours: [[10, 6]]'])).rejects.toThrow(/invalid peakHours window/)
+    // An out-of-range hour is rejected by the schema before apply() runs.
+    await expect(boot(['    peakHours: [[24, 5]]'])).rejects.toThrow(/expected number <= 23/)
+  })
 })
